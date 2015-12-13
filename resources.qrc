@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/images/application">
+        <file alias="splashScreen">1UpMushroom256x256.png</file>
+    </qresource>
+    <qresource prefix="/qml">
+        <file>Base.qml</file>
+        <file>DestinationPanel.qml</file>
+        <file>FilesPanel.qml</file>
+        <file>main.qml</file>
+        <file>PreviewPanel.qml</file>
+        <file>SourcePanel.qml</file>
+        <file>ThumbnailsPanel.qml</file>
+    </qresource>
+</RCC>
