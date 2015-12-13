@@ -1,4 +1,4 @@
-TARGET = ThumbnailGenerator_GUI
+TARGET = MONSTER_tgg
 
 TEMPLATE = app
 
