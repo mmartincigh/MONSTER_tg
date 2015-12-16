@@ -17,12 +17,6 @@ public:
         Stopped,
         Completed
     };
-
-    enum AspectRatio
-    {
-        Ratio_4_3,
-        Ratio_16_9
-    };
 };
 
 #endif // ENUMS

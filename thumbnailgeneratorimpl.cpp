@@ -681,7 +681,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             // The output file cannot be overwritten, check whether the thumbnail already exists.
             if (output_file_exists)
             {
-                this->warning("The output thumbnail file \"" + output_file_info.fileName() + "\" already exists, skipping...");
+                this->debug("The output thumbnail file \"" + output_file_info.fileName() + "\" already exists, skipping...");
 
                 this->setProgress((current_progress += thumbnail_number) / total_progress);
                 this->setSkipped(m_skipped + 1);
@@ -779,26 +779,60 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
         this->debug("Input height: " + QString::number(input_height) + " pixels");
 
-        // Convert the display aspect ratio to an enum.
-        Enums::AspectRatio display_aspect_ratio;
-        if (ffprobe_info.at(2) == "4:3")
+        // Convert the display aspect ratio to numbers.
+        QStringList input_display_aspect_ratio_split = ffprobe_info.at(2).split(':');
+        if (input_display_aspect_ratio_split.size() != 2)
         {
-            display_aspect_ratio = Enums::Ratio_4_3;
-        }
-        else if (ffprobe_info.at(2) == "16:9")
-        {
-            display_aspect_ratio = Enums::Ratio_16_9;
-        }
-        else
-        {
-            this->error("Invalid display aspect ratio: " + ffprobe_info.at(2));
+            this->error("Cannot convert the input display ratio to numbers");
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
             continue;
         }
-        this->debug("Display aspect ratio: " + ffprobe_info.at(2));
+        ret_val = false;
+        int input_horizontal_aspect_ratio = english_locale.toInt(input_display_aspect_ratio_split.at(0), &ret_val);
+        if (!ret_val)
+        {
+            this->error("Cannot convert the input horizontal aspect ratio to int");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        if (input_horizontal_aspect_ratio < 0)
+        {
+            this->error("Invalid input horizontal aspect ratio: " + QString::number(input_horizontal_aspect_ratio));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        this->debug("Input horizontal aspect ratio: " + QString::number(input_horizontal_aspect_ratio));
+        ret_val = false;
+        int input_vertical_aspect_ratio = english_locale.toInt(input_display_aspect_ratio_split.at(1), &ret_val);
+        if (!ret_val)
+        {
+            this->error("Cannot convert the input vertical aspect ratio to int");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        if (input_vertical_aspect_ratio < 0)
+        {
+            this->error("Invalid input vertical aspect ratio: " + QString::number(input_vertical_aspect_ratio));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        this->debug("Input vertical aspect ratio: " + QString::number(input_vertical_aspect_ratio));
+        this->debug("Input display aspect ratio: " + QString::number(input_horizontal_aspect_ratio) + ":" + QString::number(input_vertical_aspect_ratio));
 
         // Convert the input duration to a number.
         ret_val = false;
@@ -816,31 +850,12 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
         // Check whether the video format is consistent with its size.
         cv::Size input_thumbnail_size(input_width, input_height);
-        int horizontal_ratio = 0;
-        int vertical_ratio = 0;
-        switch (display_aspect_ratio) {
-        case Enums::Ratio_4_3:
-            horizontal_ratio = 4;
-            vertical_ratio = 3;
-
-            break;
-        case Enums::Ratio_16_9:
-            horizontal_ratio = 16;
-            vertical_ratio = 9;
-
-            break;
-        default:
-            this->error("Invalid display aspect ratio: " + QString::number(display_aspect_ratio));
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        if (vertical_ratio * input_thumbnail_size.width != horizontal_ratio * input_thumbnail_size.height)
+        if (input_horizontal_aspect_ratio > 0
+                && input_vertical_aspect_ratio > 0
+                && input_vertical_aspect_ratio * input_thumbnail_size.width != input_horizontal_aspect_ratio * input_thumbnail_size.height)
         {
             // The display aspect ratio does not match the actual resolution of the video, adjust the input height accordingly.
-            input_thumbnail_size.height = static_cast<float>(input_thumbnail_size.width) / horizontal_ratio * vertical_ratio;
+            input_thumbnail_size.height = static_cast<float>(input_thumbnail_size.width) / input_horizontal_aspect_ratio * input_vertical_aspect_ratio;
 
             this->debug("Display aspect ratio/video resolution mismatch. Input thumbnail's aspect ratio adjusted: " + QString::number(input_thumbnail_size.width) + "x" + QString::number(input_thumbnail_size.height));
         }
@@ -925,6 +940,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                 this->warning("The thumbnail number " + QString::number(current_thumbnail_number) + " has not been generated");
 
                 this->setProgress(++current_progress / total_progress);
+                this->setWarnings(m_warnings + 1);
                 this->setThumbnailUrl(QUrl());
 
                 continue;
