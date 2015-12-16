@@ -712,7 +712,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
 
         // Get the width, height and duration of the input video file.
-        QString ffprobe_info_command(QString("ffprobe -v error -show_entries stream=width -show_entries stream=height -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"%1\"").arg(input_file));
+        QString ffprobe_info_command(QString("ffprobe -v error -show_entries stream=width -show_entries stream=height -show_entries stream=display_aspect_ratio -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"%1\"").arg(input_file));
         this->debug("FFprobe info command: " + ffprobe_info_command);
         QProcess ffprobe_info_process;
         ffprobe_info_process.start(ffprobe_info_command);
@@ -738,9 +738,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         this->debug("FFprobe info output: " + ffprobe_info_output);
         QStringList ffprobe_info = ffprobe_info_output.split(' ').filter(QRegExp("^((?!N/A).)*$"));
         this->debug("FFprobe info: " + ffprobe_info.join(' '));
-        if (ffprobe_info.size() != 3)
+        if (ffprobe_info.size() != 4)
         {
-            this->error("FFprobe did not collect the corrent number of info. Expected 3 elements: width, height and duration");
+            this->error("FFprobe did not collect the corrent number of info. Expected 4 elements: width, height, display aspect ratio and duration");
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -779,9 +779,30 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
         this->debug("Input height: " + QString::number(input_height) + " pixels");
 
+        // Convert the display aspect ratio to an enum.
+        Enums::AspectRatio display_aspect_ratio;
+        if (ffprobe_info.at(2) == "4:3")
+        {
+            display_aspect_ratio = Enums::Ratio_4_3;
+        }
+        else if (ffprobe_info.at(2) == "16:9")
+        {
+            display_aspect_ratio = Enums::Ratio_16_9;
+        }
+        else
+        {
+            this->error("Invalid display aspect ratio: " + ffprobe_info.at(2));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        this->debug("Display aspect ratio: " + ffprobe_info.at(2));
+
         // Convert the input duration to a number.
         ret_val = false;
-        double input_duration = english_locale.toDouble(ffprobe_info.at(2), &ret_val);
+        double input_duration = english_locale.toDouble(ffprobe_info.at(3), &ret_val);
         if (!ret_val)
         {
             this->error("Cannot convert the input duration to double");
@@ -793,6 +814,37 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
         this->debug("Input duration: " + QString::number(input_duration) + " seconds");
 
+        // Check whether the video format is consistent with its size.
+        cv::Size input_thumbnail_size(input_width, input_height);
+        int horizontal_ratio = 0;
+        int vertical_ratio = 0;
+        switch (display_aspect_ratio) {
+        case Enums::Ratio_4_3:
+            horizontal_ratio = 4;
+            vertical_ratio = 3;
+
+            break;
+        case Enums::Ratio_16_9:
+            horizontal_ratio = 16;
+            vertical_ratio = 9;
+
+            break;
+        default:
+            this->error("Invalid display aspect ratio: " + QString::number(display_aspect_ratio));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        if (vertical_ratio * input_thumbnail_size.width != horizontal_ratio * input_thumbnail_size.height)
+        {
+            // The display aspect ratio does not match the actual resolution of the video, adjust the input height accordingly.
+            input_thumbnail_size.height = static_cast<float>(input_thumbnail_size.width) / horizontal_ratio * vertical_ratio;
+
+            this->debug("Display aspect ratio/video resolution mismatch. Input thumbnail's aspect ratio adjusted: " + QString::number(input_thumbnail_size.width) + "x" + QString::number(input_thumbnail_size.height));
+        }
+
         // Calculate the interval of the thumbnails.
         double thumbnail_interval = input_duration / (thumbnail_number + 1);
         this->debug("Thumbnails interval: " + QString::number(thumbnail_interval) + " seconds");
@@ -801,7 +853,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         QVector<double> thumbnail_offsets(thumbnail_number);
         for (int j = 0; j < thumbnail_number; j++)
         {
-            thumbnail_offsets[j] = j * thumbnail_interval;
+            thumbnail_offsets[j] = (j + 1) * thumbnail_interval;
         }
 
         // Check whether the process should be paused, resumed or stopped.
@@ -811,8 +863,8 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
 
         // Generate the thumbnails and compose the multi-screenshot thumbnail.
-        int output_thumbnail_width = m_thumbnailColumns * input_width;
-        int output_thumbnail_height = m_thumbnailRows * input_height;
+        int output_thumbnail_width = m_thumbnailColumns * input_thumbnail_size.width;
+        int output_thumbnail_height = m_thumbnailRows * input_thumbnail_size.height;
         cv::Size output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
         this->debug("Output thumbnail size: " + QString::number(output_thumbnail_size.width) + "x" + QString::number(output_thumbnail_size.height));
         cv::Mat output_thumbnail= cv::Mat::zeros(output_thumbnail_size, CV_8UC3);
@@ -894,7 +946,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             int row = thumbnail_index / m_thumbnailColumns;
             int column = thumbnail_index % m_thumbnailColumns;
             cv::Mat current_thumbnail = cv::imread(thumbnail_path.toStdString(), CV_LOAD_IMAGE_ANYCOLOR);
-            current_thumbnail.copyTo(output_thumbnail(cv::Rect(column * input_width, row * input_height, input_width, input_height)));
+            cv::Mat current_thumbnail_final;
+            cv::resize(current_thumbnail, current_thumbnail_final, input_thumbnail_size);
+            current_thumbnail_final.copyTo(output_thumbnail(cv::Rect(column * input_thumbnail_size.width, row * input_thumbnail_size.height, input_thumbnail_size.width, input_thumbnail_size.height)));
 
             this->setProgress(++current_progress / total_progress);
         }
@@ -915,26 +969,32 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
         this->setThumbnailUrl(QUrl());
         this->debug("Thumbnails generated");
-        int output_max_width = 600;
-        int output_max_height = 600;
-        cv::Size output_thumbnail_size_resized;
-        float scale = qMin(static_cast<float>(output_max_width) / output_thumbnail_width, static_cast<float>(output_max_height) / output_thumbnail_height);
-        this->debug("Scale: " + QString::number(scale));
-        output_thumbnail_size_resized.width = qMin(output_max_width, qCeil(output_thumbnail_width * scale));
-        output_thumbnail_size_resized.height = qMin(output_max_height, qCeil(output_thumbnail_height * scale));
-        this->debug("Output thumbnail size resized: " + QString::number(output_thumbnail_size_resized.width) + "x" + QString::number(output_thumbnail_size_resized.height));
-        if (output_thumbnail_size_resized.width <= 0
-                || output_thumbnail_size_resized.height <= 0)
+
+        // Resize the output thumbnail if necessary.
+        cv::Size output_thumbnail_final_size(output_thumbnail_width, output_thumbnail_height);
+        if (output_thumbnail_width > m_thumbnailMaxWidth
+                || output_thumbnail_height > m_thumbnailMaxHeight)
         {
-            this->error("Invalid output thumbnail size: " + QString::number(output_thumbnail_size_resized.width) + "x" + QString::number(output_thumbnail_size_resized.height));
+            float scale = qMin(static_cast<float>(m_thumbnailMaxWidth) / output_thumbnail_width, static_cast<float>(m_thumbnailMaxHeight) / output_thumbnail_height);
+            this->debug("Scale: " + QString::number(scale));
+            output_thumbnail_final_size.width = qMin(m_thumbnailMaxWidth, qCeil(output_thumbnail_width * scale));
+            output_thumbnail_final_size.height = qMin(m_thumbnailMaxHeight, qCeil(output_thumbnail_height * scale));
+        }
+        this->debug("Output thumbnail final size: " + QString::number(output_thumbnail_final_size.width) + "x" + QString::number(output_thumbnail_final_size.height));
+        if (output_thumbnail_final_size.width <= 0
+                || output_thumbnail_final_size.height <= 0)
+        {
+            this->error("Invalid output thumbnail size: " + QString::number(output_thumbnail_final_size.width) + "x" + QString::number(output_thumbnail_final_size.height));
 
             this->setErrors(m_errors + 1);
 
             continue;
         }
-        cv::Mat output_thumbnail_resized;
-        cv::resize(output_thumbnail, output_thumbnail_resized, output_thumbnail_size_resized);
-        ret_val = imwrite(output_file.toStdString(), output_thumbnail_resized);
+
+        // Write the output thumbnail.
+        cv::Mat output_thumbnail_final;
+        cv::resize(output_thumbnail, output_thumbnail_final, output_thumbnail_final_size);
+        ret_val = imwrite(output_file.toStdString(), output_thumbnail_final);
         if (!ret_val)
         {
             this->error("Cannot write output thumbnail: " + output_file);
