@@ -1,6 +1,7 @@
 #ifndef THUMBNAILGENERATORIMPL_H
 #define THUMBNAILGENERATORIMPL_H
 
+#include <QImage>
 #include <QUrl>
 #include <QWaitCondition>
 
@@ -19,6 +20,7 @@ private:
     int m_thumbnailColumns;
     int m_thumbnailMaxWidth;
     int m_thumbnailMaxHeight;
+    QImage m_noThumbnailImage;
     Enums::State m_state;
     QString m_stateDescription;
     bool m_pause;
@@ -66,6 +68,7 @@ private:
     void setThumbnailColumns(int thumbnailColumns);
     void setThumbnailMaxWidth(int thumbnailMaxWidth);
     void setThumbnailMaxHeight(int thumbnailMaxHeight);
+    void setNoThumbnailImage(const QImage &noThumbnailImage);
     void setState(Enums::State state);
     void setStateDescription(const QString &stateDescription);
     void setProgress(float progress);
@@ -103,6 +106,7 @@ signals:
     void thumbnailColumnsChanged(int thumbnailCoolumns);
     void thumbnailMaxWidthChanged(int thumbnailMaxWidth);
     void thumbnailMaxHeightChanged(int thumbnailMaxHeight);
+    void noThumbnailImageChanged(const QImage &noThumbnailImage);
     void stateChanged(Enums::State state);
     void stateDescriptionChanged(const QString &stateDescription);
     void pauseChanged(bool pause);

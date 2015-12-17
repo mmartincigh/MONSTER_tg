@@ -24,6 +24,7 @@ ThumbnailGeneratorImpl::ThumbnailGeneratorImpl(QMutex *mutex, QWaitCondition *wa
     m_thumbnailColumns(0),
     m_thumbnailMaxWidth(0),
     m_thumbnailMaxHeight(0),
+    m_noThumbnailImage(),
     m_state(Enums::Idle),
     m_stateDescription(Utils::thumbnailGenerationStateToString(m_state)),
     m_pause(false),
@@ -61,13 +62,16 @@ void ThumbnailGeneratorImpl::initialize()
     emit this->thumbnailColumns(&thumbnail_columns);
     this->setThumbnailColumns(thumbnail_columns);
 
-    int output_thumbnail_max_width = 0;
-    emit this->thumbnailMaxWidth(&output_thumbnail_max_width);
-    this->setThumbnailMaxWidth(output_thumbnail_max_width);
+    int thumbnail_max_width = 0;
+    emit this->thumbnailMaxWidth(&thumbnail_max_width);
+    this->setThumbnailMaxWidth(thumbnail_max_width);
 
-    int output_thumbnail_max_height = 0;
-    emit this->thumbnailMaxHeight(&output_thumbnail_max_height);
-    this->setThumbnailMaxHeight(output_thumbnail_max_height);
+    int thumbnail_max_height = 0;
+    emit this->thumbnailMaxHeight(&thumbnail_max_height);
+    this->setThumbnailMaxHeight(thumbnail_max_height);
+
+    QImage no_thumbnail_image(":/images/thumbnails/noThumbnail");
+    this->setNoThumbnailImage(no_thumbnail_image.convertToFormat(QImage::Format_RGB888));
 
     this->debug("Initialized");
 }
@@ -248,6 +252,20 @@ void ThumbnailGeneratorImpl::setThumbnailMaxHeight(int thumbnailMaxHeight)
     this->debug("Thumbnail max height changed: " + QString::number(m_thumbnailMaxHeight));
 
     emit this->thumbnailMaxHeightChanged(m_thumbnailMaxHeight);
+}
+
+void ThumbnailGeneratorImpl::setNoThumbnailImage(const QImage &noThumbnailImage)
+{
+    if (m_noThumbnailImage == noThumbnailImage)
+    {
+        return;
+    }
+
+    m_noThumbnailImage = noThumbnailImage;
+
+    this->debug("No thumbnail image changed: size " + QString::number(m_noThumbnailImage.width()) + "x" + QString::number(m_noThumbnailImage.height()) + " format " + QString::number(m_noThumbnailImage.format()));
+
+    emit this->noThumbnailImageChanged(m_noThumbnailImage);
 }
 
 void ThumbnailGeneratorImpl::setState(Enums::State state)
@@ -636,6 +654,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         return;
     }
 
+    // Prepare the fallback thumbnail beforehand.
+    cv::Mat no_thumbnail(m_noThumbnailImage.height(), m_noThumbnailImage.width(), CV_8UC3, const_cast<uchar *>(m_noThumbnailImage.bits()), m_noThumbnailImage.bytesPerLine());
+
     // Generate the thumbnails.
     float total_progress = video_files.size() * thumbnail_number;
     int current_progress = 0;
@@ -871,6 +892,10 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             thumbnail_offsets[j] = (j + 1) * thumbnail_interval;
         }
 
+        // Prepare the fallback thumbnail just in case.
+        cv::Mat fallback_thumbnail = cv::Mat::zeros(input_thumbnail_size, CV_8UC3);
+        no_thumbnail.copyTo(fallback_thumbnail(cv::Rect((input_thumbnail_size.width - no_thumbnail.cols) / 2, (input_thumbnail_size.height - no_thumbnail.rows) / 2, no_thumbnail.cols, no_thumbnail.rows)));
+
         // Check whether the process should be paused, resumed or stopped.
         if (!this->processStateCheckpoint())
         {
@@ -882,7 +907,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         int output_thumbnail_height = m_thumbnailRows * input_thumbnail_size.height;
         cv::Size output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
         this->debug("Output thumbnail size: " + QString::number(output_thumbnail_size.width) + "x" + QString::number(output_thumbnail_size.height));
-        cv::Mat output_thumbnail= cv::Mat::zeros(output_thumbnail_size, CV_8UC3);
+        cv::Mat output_thumbnail = cv::Mat::zeros(output_thumbnail_size, CV_8UC3);
         this->debug("Generating " + QString::number(thumbnail_offsets.size()) + " thumbnails...");
         QDir temp_directory(temporary_path);
         if (!temp_directory.exists())
@@ -935,20 +960,21 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             // Check whether the thumbnail has been generated.
             QFileInfo thumbnail_file_info(thumbnail_path);
-            if (!thumbnail_file_info.exists())
+            bool thumbnail_generated = thumbnail_file_info.exists();
+            if (thumbnail_generated)
+            {
+                generated_thumbnails++;
+
+                this->debug("Thumbnail " + QString::number(current_thumbnail_number) + " generated: offset: " + QString::number(thumbnail_offset) + " seconds");
+                this->setThumbnailUrl(QUrl::fromLocalFile(thumbnail_path));
+            }
+            else
             {
                 this->warning("The thumbnail number " + QString::number(current_thumbnail_number) + " has not been generated");
 
-                this->setProgress(++current_progress / total_progress);
                 this->setWarnings(m_warnings + 1);
                 this->setThumbnailUrl(QUrl());
-
-                continue;
             }
-
-            generated_thumbnails++;
-            this->debug("Thumbnail " + QString::number(current_thumbnail_number) + " generated: offset: " + QString::number(thumbnail_offset) + " seconds");
-            this->setThumbnailUrl(QUrl::fromLocalFile(thumbnail_path));
 
             // Check whether the process should be paused, resumed or stopped.
             if (!this->processStateCheckpoint())
@@ -961,7 +987,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             // Add the thumbnail to the the multi-screenshot thumbnail.
             int row = thumbnail_index / m_thumbnailColumns;
             int column = thumbnail_index % m_thumbnailColumns;
-            cv::Mat current_thumbnail = cv::imread(thumbnail_path.toStdString(), CV_LOAD_IMAGE_ANYCOLOR);
+            cv::Mat current_thumbnail = thumbnail_generated ? cv::imread(thumbnail_path.toStdString(), CV_LOAD_IMAGE_ANYCOLOR) : fallback_thumbnail;
             cv::Mat current_thumbnail_final;
             cv::resize(current_thumbnail, current_thumbnail_final, input_thumbnail_size);
             current_thumbnail_final.copyTo(output_thumbnail(cv::Rect(column * input_thumbnail_size.width, row * input_thumbnail_size.height, input_thumbnail_size.width, input_thumbnail_size.height)));

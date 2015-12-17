@@ -2,6 +2,9 @@
     <qresource prefix="/images/application">
         <file alias="splashScreen">1UpMushroom256x256.png</file>
     </qresource>
+    <qresource prefix="/images/thumbnails">
+        <file alias="noThumbnail">1UpMushroom128x128_dark.png</file>
+    </qresource>
     <qresource prefix="/qml">
         <file>Base.qml</file>
         <file>DestinationPanel.qml</file>
