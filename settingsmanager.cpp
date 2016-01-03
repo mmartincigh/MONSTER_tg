@@ -3,10 +3,10 @@
 
 #include "settingsmanager.h"
 
-const QString SettingsManager::m_SOURCE_PATH_URL_KEY("sourceManager/sourcePathUrl");
-const QUrl SettingsManager::m_FALL_BACK_SOURCE_PATH_URL("");
-const QString SettingsManager::m_DESTINATION_PATH_URL_KEY("sourceManager/destinationPathUrl");
-const QUrl SettingsManager::m_FALL_BACK_DESTINATION_PATH_URL("");
+const QString SettingsManager::m_SOURCE_PATH_MODEL_KEY("sourceManager/sourcePathModel");
+const QStringList SettingsManager::m_FALL_BACK_SOURCE_PATH_MODEL;
+const QString SettingsManager::m_DESTINATION_PATH_MODEL_KEY("sourceManager/destinationPathModel");
+const QStringList SettingsManager::m_FALL_BACK_DESTINATION_PATH_MODEL;
 const QString SettingsManager::m_THUMBNAIL_ROWS_KEY("thumbnailGenerator/thumbnailRows");
 const int SettingsManager::m_FALL_BACK_THUMBNAIL_ROWS(6);
 const QString SettingsManager::m_THUMBNAIL_COLUMNS_KEY("thumbnailGenerator/thumbnailColumns");
@@ -28,14 +28,14 @@ SettingsManager::~SettingsManager()
     this->debug("Settings manager disposed of");
 }
 
-QUrl SettingsManager::sourcePathUrl() const
+QStringList SettingsManager::sourcePathModel() const
 {
-    return m_settings.value(m_SOURCE_PATH_URL_KEY, m_FALL_BACK_SOURCE_PATH_URL).toUrl();
+    return m_settings.value(m_SOURCE_PATH_MODEL_KEY, m_FALL_BACK_SOURCE_PATH_MODEL).toStringList();
 }
 
-QUrl SettingsManager::destinationPathUrl() const
+QStringList SettingsManager::destinationPathModel() const
 {
-    return m_settings.value(m_DESTINATION_PATH_URL_KEY, m_FALL_BACK_DESTINATION_PATH_URL).toUrl();
+    return m_settings.value(m_DESTINATION_PATH_MODEL_KEY, m_FALL_BACK_DESTINATION_PATH_MODEL).toStringList();
 }
 
 int SettingsManager::thumbnailRows() const
@@ -58,56 +58,56 @@ int SettingsManager::thumbnailMaxHeight() const
     return m_settings.value(m_THUMBNAIL_MAX_HEIGHT_KEY, m_FALL_BACK_THUMBNAIL_MAX_HEIGHT).toInt();
 }
 
-void SettingsManager::onSourcePathUrl(QUrl *sourcePathUrl)
+void SettingsManager::onSourcePathModel(QStringList *sourcePathModel)
 {
-    if (sourcePathUrl == NULL)
+    if (sourcePathModel == NULL)
     {
         return;
     }
 
-    *sourcePathUrl = this->sourcePathUrl();
+    *sourcePathModel = this->sourcePathModel();
 
-    this->debug("Source path URL: " + (*sourcePathUrl).toString());
+    this->debug("Source path model: " + (*sourcePathModel).join('|'));
 }
 
-void SettingsManager::onSourcePathUrlChanged(const QUrl &sourcePathUrl)
+void SettingsManager::onSourcePathModelChanged(const QStringList &sourcePathModel)
 {
-    QUrl default_source_path_url = this->sourcePathUrl();
+    QStringList default_source_path_model = this->sourcePathModel();
 
-    if (default_source_path_url == sourcePathUrl)
+    if (default_source_path_model == sourcePathModel)
     {
         return;
     }
 
-    m_settings.setValue(m_SOURCE_PATH_URL_KEY, sourcePathUrl);
+    m_settings.setValue(m_SOURCE_PATH_MODEL_KEY, sourcePathModel);
 
-    this->debug("Source path URL changed: " + sourcePathUrl.toString());
+    this->debug("Source path model changed: " + sourcePathModel.join('|'));
 }
 
-void SettingsManager::onDestinationPathUrl(QUrl *destinationPathUrl)
+void SettingsManager::onDestinationPathModel(QStringList *destinationPathModel)
 {
-    if (destinationPathUrl == NULL)
+    if (destinationPathModel == NULL)
     {
         return;
     }
 
-    *destinationPathUrl = this->destinationPathUrl();
+    *destinationPathModel = this->destinationPathModel();
 
-    this->debug("Destination path URL: " + (*destinationPathUrl).toString());
+    this->debug("Destination path model: " + (*destinationPathModel).join('|'));
 }
 
-void SettingsManager::onDestinationPathUrlChanged(const QUrl &destinationPathUrl)
+void SettingsManager::onDestinationPathModelChanged(const QStringList &destinationPathModel)
 {
-    QUrl default_destination_path_url = this->destinationPathUrl();
+    QStringList default_destination_path_model = this->destinationPathModel();
 
-    if (default_destination_path_url == destinationPathUrl)
+    if (default_destination_path_model == destinationPathModel)
     {
         return;
     }
 
-    m_settings.setValue(m_DESTINATION_PATH_URL_KEY, destinationPathUrl);
+    m_settings.setValue(m_DESTINATION_PATH_MODEL_KEY, destinationPathModel);
 
-    this->debug("Destination path URL changed: " + destinationPathUrl.toString());
+    this->debug("Destination path model changed: " + destinationPathModel.join('|'));
 }
 
 void SettingsManager::onThumbnailRows(int *thumbnailRows)

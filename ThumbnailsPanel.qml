@@ -172,7 +172,11 @@ Item {
         text: qsTr("generate thumbnails")
         enabled: thumbnailGenerator.isEnabled && (thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed)
 
-        onClicked: { thumbnailGenerator.onGenerateThumbnails() }
+        onClicked: {
+            sourceManager.onGenerateThumbnails();
+            destinationManager.onGenerateThumbnails();
+            thumbnailGenerator.onGenerateThumbnails();
+        }
     }
 
     ProgressBar {

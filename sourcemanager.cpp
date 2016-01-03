@@ -3,16 +3,18 @@
 #include "sourcemanager.h"
 #include "utils.h"
 
+const int SourceManager::m_MAX_MODEL_SIZE(5);
 const QString SourceManager::m_URL_FILE_SCHEME("file:///");
 
 SourceManager::SourceManager(QObject *parent) :
     Base("SRCM", parent),
+    m_editText(""),
+    m_sourcePathModel(),
     m_sourcePath(""),
     m_sourcePathUrl(""),
     m_isSourcePathUrlValid(false)
 {
-    QObject::connect(this, SIGNAL(sourcePathChanged(QString)), this, SLOT(onSourcePathChanged(QString)));
-    QObject::connect(this, SIGNAL(sourcePathUrlChanged(QUrl)), this, SLOT(onSourcePathUrlChanged(QUrl)));
+    QObject::connect(this, SIGNAL(editTextChanged(QString)), this, SLOT(onEditTextChanged(QString)));
 
     this->debug("Source manager created");
 }
@@ -24,16 +26,16 @@ SourceManager::~SourceManager()
 
 void SourceManager::initialize()
 {
-    QUrl source_path_url;
-    emit this->sourcePathUrl(&source_path_url);
-    this->setSourcePathUrl(source_path_url);
+    QStringList source_path_model;
+    emit this->sourcePathModel(&source_path_model);
+    this->setSourcePathModel(source_path_model);
 
     this->debug("Initialized");
 }
 
-QString SourceManager::sourcePath() const
+QStringList SourceManager::sourcePathModel() const
 {
-    return m_sourcePath;
+    return m_sourcePathModel;
 }
 
 QUrl SourceManager::sourcePathUrl() const
@@ -44,6 +46,34 @@ QUrl SourceManager::sourcePathUrl() const
 bool SourceManager::isSourcePathUrlValid() const
 {
     return m_isSourcePathUrlValid;
+}
+
+void SourceManager::setEditText(const QString &editText)
+{
+    if (m_editText == editText)
+    {
+        return;
+    }
+
+    m_editText = editText;
+
+    this->debug("Edit text changed: " + m_editText);
+
+    emit this->editTextChanged(m_editText);
+}
+
+void SourceManager::setSourcePathModel(const QStringList &sourcePathModel)
+{
+    if (m_sourcePathModel == sourcePathModel)
+    {
+        return;
+    }
+
+    m_sourcePathModel = sourcePathModel;
+
+    this->debug("Source path model changed: " + m_sourcePathModel.join('|'));
+
+    emit this->sourcePathModelChanged(m_sourcePathModel);
 }
 
 void SourceManager::setSourcePath(const QString &sourcePath)
@@ -82,19 +112,20 @@ void SourceManager::setIsSourcePathUrlValid(bool isSourcePathUrlValid)
     }
 
     m_isSourcePathUrlValid = isSourcePathUrlValid;
-    emit this->isSourcePathUrlValidChanged(m_isSourcePathUrlValid);
 
     this->debug("Is source path URL valid changed: " + QString(m_isSourcePathUrlValid ? "true" : "false"));
+
+    emit this->isSourcePathUrlValidChanged(m_isSourcePathUrlValid);
 }
 
-void SourceManager::onUpdateSourcePath(const QString &sourcePath)
+void SourceManager::onSourcePath(QString *sourcePath)
 {
-    this->setSourcePath(sourcePath);
-}
+    if (sourcePath == NULL)
+    {
+        return;
+    }
 
-void SourceManager::onUpdateSourcePathUrl(const QUrl &sourcePathUrl)
-{
-    this->setSourcePathUrl(sourcePathUrl);
+    *sourcePath = m_sourcePath;
 }
 
 void SourceManager::onIsSourcePathUrlValid(bool *isSourcePathUrlValid)
@@ -107,19 +138,54 @@ void SourceManager::onIsSourcePathUrlValid(bool *isSourcePathUrlValid)
     *isSourcePathUrlValid = m_isSourcePathUrlValid;
 }
 
-void SourceManager::onSourcePathUrl(QUrl *sourcePathUrl)
+void SourceManager::onUpdateEditText(const QString &editText)
 {
-    if (sourcePathUrl == NULL)
+    this->setEditText(editText);
+}
+
+void SourceManager::onUpdateEditText(const QUrl &editText)
+{
+    QString edit_text = Utils::urlToString(editText);
+    this->setEditText(edit_text);
+}
+
+void SourceManager::onGenerateThumbnails()
+{
+    // Do not change the model if the current path is invalid.
+    if (!m_isSourcePathUrlValid)
     {
         return;
     }
 
-    *sourcePathUrl = m_sourcePath;
+    // Get the source path model.
+    QStringList source_path_model = m_sourcePathModel;
+
+    // Check whether the model already contains the current path.
+    if (source_path_model.contains(m_editText))
+    {
+        // Move the current path to the top.
+        source_path_model.removeAll(m_editText);
+        source_path_model.prepend(m_editText);
+        this->setSourcePathModel(source_path_model);
+
+        return;
+    }
+
+    // Make room for another entry if necessary.
+    while (source_path_model.size() >= m_MAX_MODEL_SIZE)
+    {
+        // Remove the oldest (last) entry from the model.
+        source_path_model.removeLast();
+    }
+
+    // Prepend the current path to the model.
+    source_path_model.prepend(m_editText);
+    this->setSourcePathModel(source_path_model);
 }
 
-void SourceManager::onSourcePathChanged(const QString &sourcePath)
+void SourceManager::onEditTextChanged(const QString &editText)
 {
-    QFileInfo source_path_info(sourcePath);
+    QFileInfo source_path_info(editText);
     bool is_source_path_valid = source_path_info.exists() && source_path_info.isDir();
     this->setIsSourcePathUrlValid(is_source_path_valid);
 
@@ -130,13 +196,9 @@ void SourceManager::onSourcePathChanged(const QString &sourcePath)
         return;
     }
 
-    QString source_path(sourcePath);
+    this->setSourcePath(editText);
+
+    QString source_path(editText);
     QUrl source_path_url(source_path.prepend(m_URL_FILE_SCHEME));
     this->setSourcePathUrl(source_path_url);
-}
-
-void SourceManager::onSourcePathUrlChanged(const QUrl &sourcePathUrl)
-{
-    QString source_path = Utils::urlToString(sourcePathUrl);
-    this->setSourcePath(source_path);
 }

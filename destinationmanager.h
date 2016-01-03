@@ -8,12 +8,15 @@
 class DestinationManager : public Base
 {
     Q_OBJECT
-    Q_PROPERTY(QString destinationPath READ destinationPath NOTIFY destinationPathChanged)
+    Q_PROPERTY(QStringList destinationPathModel READ destinationPathModel NOTIFY destinationPathModelChanged)
     Q_PROPERTY(QUrl destinationPathUrl READ destinationPathUrl NOTIFY destinationPathUrlChanged)
     Q_PROPERTY(bool isDestinationPathUrlValid READ isDestinationPathUrlValid NOTIFY isDestinationPathUrlValidChanged)
 
 private:
+    static const int m_MAX_MODEL_SIZE;
     static const QString m_URL_FILE_SCHEME;
+    QString m_editText;
+    QStringList m_destinationPathModel;
     QString m_destinationPath;
     QUrl m_destinationPathUrl;
     bool m_isDestinationPathUrlValid;
@@ -24,27 +27,31 @@ public:
 
 public:
     void initialize();
-    QString destinationPath() const;
+    QStringList destinationPathModel() const;
     QUrl destinationPathUrl() const;
     bool isDestinationPathUrlValid() const;
 
 private:
+    void setEditText(const QString &editText);
+    void setDestinationPathModel(const QStringList &destinationPathModel);
     void setDestinationPath(const QString &destinationPath);
     void setDestinationPathUrl(const QUrl &destinationPathUrl);
     void setIsDestinationPathUrlValid(bool isDestinationPathUrlValid);
 
 public slots:
-    void onUpdateDestinationPath(const QString &destinationPath);
-    void onUpdateDestinationPathUrl(const QUrl &destinationPathUrl);
+    void onDestinationPath(QString *destinationPath);
     void onIsDestinationPathUrlValid(bool *isDestinationPathUrlValid);
-    void onDestinationPathUrl(QUrl *destinationPathUrl);
+    void onUpdateEditText(const QString &editText);
+    void onUpdateEditText(const QUrl &editText);
+    void onGenerateThumbnails();
 
 private slots:
-    void onDestinationPathChanged(const QString &destinationPath);
-    void onDestinationPathUrlChanged(const QUrl &destinationPathUrl);
+    void onEditTextChanged(const QString &editText);
 
 signals:
-    void destinationPathUrl(QUrl *destinationPath);
+    void editTextChanged(const QString &editText);
+    void destinationPathModel(QStringList *destinationPathModel);
+    void destinationPathModelChanged(const QStringList &destinationPathModel);
     void destinationPathChanged(const QString &destinationPath);
     void destinationPathUrlChanged(const QUrl &destinationPathUrl);
     void isDestinationPathUrlValidChanged(bool isDestinationPathUrlValid);

@@ -122,8 +122,8 @@ signals:
     void thumbnailUrlChanged(const QUrl &thumbnailUrl);
     void isSourcePathUrlValid(bool *isSourcePathUrlValid);
     void isDestinationPathUrlValid(bool *isDestinationPathUrlValid);
-    void sourcePathUrl(QUrl *sourcePathUrl);
-    void destinationPathUrl(QUrl *destinationPathUrl);
+    void sourcePath(QString *sourcePath);
+    void destinationPath(QString *destinationPath);
     void videoFiles(QStringList *videoFiles);
     void overwriteOutputFiles(bool *overwriteOutputFiles);
     void running();

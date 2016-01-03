@@ -8,12 +8,15 @@
 class SourceManager : public Base
 {
     Q_OBJECT
-    Q_PROPERTY(QString sourcePath READ sourcePath NOTIFY sourcePathChanged)
+    Q_PROPERTY(QStringList sourcePathModel READ sourcePathModel NOTIFY sourcePathModelChanged)
     Q_PROPERTY(QUrl sourcePathUrl READ sourcePathUrl NOTIFY sourcePathUrlChanged)
     Q_PROPERTY(bool isSourcePathUrlValid READ isSourcePathUrlValid NOTIFY isSourcePathUrlValidChanged)
 
 private:
+    static const int m_MAX_MODEL_SIZE;
     static const QString m_URL_FILE_SCHEME;
+    QString m_editText;
+    QStringList m_sourcePathModel;
     QString m_sourcePath;
     QUrl m_sourcePathUrl;
     bool m_isSourcePathUrlValid;
@@ -24,27 +27,31 @@ public:
 
 public:
     void initialize();
-    QString sourcePath() const;
+    QStringList sourcePathModel() const;
     QUrl sourcePathUrl() const;
     bool isSourcePathUrlValid() const;
 
 private:
+    void setEditText(const QString &editText);
+    void setSourcePathModel(const QStringList &sourcePathModel);
     void setSourcePath(const QString &sourcePath);
     void setSourcePathUrl(const QUrl &sourcePathUrl);
     void setIsSourcePathUrlValid(bool isSourcePathUrlValid);
 
 public slots:
-    void onUpdateSourcePath(const QString &sourcePath);
-    void onUpdateSourcePathUrl(const QUrl &sourcePathUrl);
+    void onSourcePath(QString *sourcePath);
     void onIsSourcePathUrlValid(bool *isSourcePathUrlValid);
-    void onSourcePathUrl(QUrl *sourcePathUrl);
+    void onUpdateEditText(const QString &editText);
+    void onUpdateEditText(const QUrl &editText);
+    void onGenerateThumbnails();
 
 private slots:
-    void onSourcePathChanged(const QString &sourcePath);
-    void onSourcePathUrlChanged(const QUrl &sourcePathUrl);
+    void onEditTextChanged(const QString &editText);
 
 signals:
-    void sourcePathUrl(QUrl *sourcePath);
+    void editTextChanged(const QString &editText);
+    void sourcePathModel(QStringList *sourcePathModel);
+    void sourcePathModelChanged(const QStringList &sourcePathModel);
     void sourcePathChanged(const QString &sourcePath);
     void sourcePathUrlChanged(const QUrl &sourcePathUrl);
     void isSourcePathUrlValidChanged(bool isSourcePathUrlValid);

@@ -36,17 +36,18 @@ private:
     void setVideoFilesCount(int videoFilesCount);
 
 public slots:
-    void onSourcePathUrlChanged(const QUrl &sourcePathUrl);
+    void onSourcePathChanged(const QString &sourcePath);
     void onVideoFiles(QStringList *videoFiles);
     void onOverwriteOutputFiles(bool *overwriteOutputFiles);
     void onReloadVideoFiles();
+    void onReloadVideoFiles(const QString &sourcePath);
     void onReloadVideoFiles(const QUrl &sourcePathUrl);
 
 signals:
     void videoFilesChanged(const QStringList &videofiles);
     void videoFilesCountChanged(bool videoFilesCount);
     void overwriteOutputFilesChanged(bool overwriteOutputFiles);
-    void sourcePathUrl(QUrl *sourcePathUrl);
+    void sourcePath(QString *sourcePath);
 };
 
 #endif // FILEMANAGER_H

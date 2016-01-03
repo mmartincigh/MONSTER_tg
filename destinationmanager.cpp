@@ -3,16 +3,18 @@
 #include "destinationmanager.h"
 #include "utils.h"
 
+const int DestinationManager::m_MAX_MODEL_SIZE(5);
 const QString DestinationManager::m_URL_FILE_SCHEME("file:///");
 
 DestinationManager::DestinationManager(QObject *parent) :
     Base("DSTM", parent),
+    m_editText(""),
+    m_destinationPathModel(),
     m_destinationPath(""),
     m_destinationPathUrl(""),
     m_isDestinationPathUrlValid(false)
 {
-    QObject::connect(this, SIGNAL(destinationPathChanged(QString)), this, SLOT(onDestinationPathChanged(QString)));
-    QObject::connect(this, SIGNAL(destinationPathUrlChanged(QUrl)), this, SLOT(onDestinationPathUrlChanged(QUrl)));
+    QObject::connect(this, SIGNAL(editTextChanged(QString)), this, SLOT(onEditTextChanged(QString)));
 
     this->debug("Destination manager created");
 }
@@ -24,16 +26,16 @@ DestinationManager::~DestinationManager()
 
 void DestinationManager::initialize()
 {
-    QUrl destination_path_url;
-    emit this->destinationPathUrl(&destination_path_url);
-    this->setDestinationPathUrl(destination_path_url);
+    QStringList destination_path_model;
+    emit this->destinationPathModel(&destination_path_model);
+    this->setDestinationPathModel(destination_path_model);
 
     this->debug("Initialized");
 }
 
-QString DestinationManager::destinationPath() const
+QStringList DestinationManager::destinationPathModel() const
 {
-    return m_destinationPath;
+    return m_destinationPathModel;
 }
 
 QUrl DestinationManager::destinationPathUrl() const
@@ -44,6 +46,34 @@ QUrl DestinationManager::destinationPathUrl() const
 bool DestinationManager::isDestinationPathUrlValid() const
 {
     return m_isDestinationPathUrlValid;
+}
+
+void DestinationManager::setEditText(const QString &editText)
+{
+    if (m_editText == editText)
+    {
+        return;
+    }
+
+    m_editText = editText;
+
+    this->debug("Edit text changed: " + m_editText);
+
+    emit this->editTextChanged(m_editText);
+}
+
+void DestinationManager::setDestinationPathModel(const QStringList &destinationPathModel)
+{
+    if (m_destinationPathModel == destinationPathModel)
+    {
+        return;
+    }
+
+    m_destinationPathModel = destinationPathModel;
+
+    this->debug("Destination path model changed: " + m_destinationPathModel.join('|'));
+
+    emit this->destinationPathModelChanged(m_destinationPathModel);
 }
 
 void DestinationManager::setDestinationPath(const QString &destinationPath)
@@ -87,14 +117,14 @@ void DestinationManager::setIsDestinationPathUrlValid(bool isDestinationPathUrlV
     this->debug("Is destination path URL valid changed: " + QString(m_isDestinationPathUrlValid ? "true" : "false"));
 }
 
-void DestinationManager::onUpdateDestinationPath(const QString &destinationPath)
+void DestinationManager::onDestinationPath(QString *destinationPath)
 {
-    this->setDestinationPath(destinationPath);
-}
+    if (destinationPath == NULL)
+    {
+        return;
+    }
 
-void DestinationManager::onUpdateDestinationPathUrl(const QUrl &destinationPathUrl)
-{
-    this->setDestinationPathUrl(destinationPathUrl);
+    *destinationPath = m_destinationPath;
 }
 
 void DestinationManager::onIsDestinationPathUrlValid(bool *isDestinationPathUrlValid)
@@ -107,21 +137,54 @@ void DestinationManager::onIsDestinationPathUrlValid(bool *isDestinationPathUrlV
     *isDestinationPathUrlValid = m_isDestinationPathUrlValid;
 }
 
-void DestinationManager::onDestinationPathUrl(QUrl *destinationPathUrl)
+void DestinationManager::onUpdateEditText(const QString &editText)
 {
-    if (destinationPathUrl == NULL)
+    this->setEditText(editText);
+}
+
+void DestinationManager::onUpdateEditText(const QUrl &editText)
+{
+    QString edit_text = Utils::urlToString(editText);
+    this->setEditText(edit_text);
+}
+
+void DestinationManager::onGenerateThumbnails()
+{
+    // Do not change the model if the current path is invalid.
+    if (!m_isDestinationPathUrlValid)
     {
         return;
     }
 
-    *destinationPathUrl = m_destinationPathUrl;
+    // Get the destination path model.
+    QStringList destination_path_model = m_destinationPathModel;
+
+    // Check whether the model already contains the current path.
+    if (destination_path_model.contains(m_editText))
+    {
+        // Move the current path to the top.
+        destination_path_model.removeAll(m_editText);
+        destination_path_model.prepend(m_editText);
+        this->setDestinationPathModel(destination_path_model);
+
+        return;
+    }
+
+    // Make room for another entry if necessary.
+    while (destination_path_model.size() >= m_MAX_MODEL_SIZE)
+    {
+        // Remove the oldest (last) entry from the model.
+        destination_path_model.removeLast();
+    }
+
+    // Prepend the current path to the model.
+    destination_path_model.prepend(m_editText);
+    this->setDestinationPathModel(destination_path_model);
 }
 
-void DestinationManager::onDestinationPathChanged(const QString &destinationPath)
+void DestinationManager::onEditTextChanged(const QString &editText)
 {
-    //this->debug(Q_FUNC_INFO);
-
-    QFileInfo destination_path_info(destinationPath);
+    QFileInfo destination_path_info(editText);
     bool is_destination_path_valid = destination_path_info.exists() && destination_path_info.isDir();
     this->setIsDestinationPathUrlValid(is_destination_path_valid);
 
@@ -132,15 +195,9 @@ void DestinationManager::onDestinationPathChanged(const QString &destinationPath
         return;
     }
 
-    QString destination_path(destinationPath);
-    QUrl destination_path_url(destination_path.prepend(m_URL_FILE_SCHEME));
+    this->setDestinationPath(editText);
+
+    QString destiantion_path(editText);
+    QUrl destination_path_url(destiantion_path.prepend(m_URL_FILE_SCHEME));
     this->setDestinationPathUrl(destination_path_url);
-}
-
-void DestinationManager::onDestinationPathUrlChanged(const QUrl &destinationPathUrl)
-{
-    //this->debug(Q_FUNC_INFO);
-
-    QString destination_path = Utils::urlToString(destinationPathUrl);
-    this->setDestinationPath(destination_path);
 }

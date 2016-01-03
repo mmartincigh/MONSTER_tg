@@ -592,18 +592,15 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         return;
     }
 
-    QUrl source_path_url;
-    emit this->sourcePathUrl(&source_path_url);
-    this->debug("Source path URL: " + source_path_url.toString());
-    if (source_path_url.isEmpty())
+    QString source_path;
+    emit this->sourcePath(&source_path);
+    this->debug("Source path: " + source_path);
+    if (source_path.isEmpty())
     {
-        this->error("Source path URL is empty");
+        this->error("Source path is empty");
 
         return;
     }
-
-    QString source_path = Utils::urlToString(source_path_url);
-    this->debug("Source path: " + source_path);
     QDir source_directory(source_path);
     if (!source_directory.exists())
     {
@@ -612,18 +609,15 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         return;
     }
 
-    QUrl destination_path_url;
-    emit this->destinationPathUrl(&destination_path_url);
-    this->debug("Destination path URL: " + destination_path_url.toString());
-    if (destination_path_url.isEmpty())
+    QString destination_path;
+    emit this->destinationPath(&destination_path);
+    this->debug("Destination path: " + destination_path);
+    if (destination_path.isEmpty())
     {
-        this->error("Destination path URL is empty");
+        this->error("Destination path is empty");
 
         return;
     }
-
-    QString destination_path = Utils::urlToString(destination_path_url);
-    this->debug("Destination path: " + destination_path);
     QDir destination_directory(destination_path);
     if (!destination_directory.exists())
     {

@@ -10,10 +10,10 @@ class SettingsManager : public Base
     Q_OBJECT
 
 private:
-    static const QString m_SOURCE_PATH_URL_KEY;
-    static const QUrl m_FALL_BACK_SOURCE_PATH_URL;
-    static const QString m_DESTINATION_PATH_URL_KEY;
-    static const QUrl m_FALL_BACK_DESTINATION_PATH_URL;
+    static const QString m_SOURCE_PATH_MODEL_KEY;
+    static const QStringList m_FALL_BACK_SOURCE_PATH_MODEL;
+    static const QString m_DESTINATION_PATH_MODEL_KEY;
+    static const QStringList m_FALL_BACK_DESTINATION_PATH_MODEL;
     static const QString m_THUMBNAIL_ROWS_KEY;
     static const int m_FALL_BACK_THUMBNAIL_ROWS;
     static const QString m_THUMBNAIL_COLUMNS_KEY;
@@ -29,18 +29,18 @@ public:
     ~SettingsManager();
 
 private:
-    QUrl sourcePathUrl() const;
-    QUrl destinationPathUrl() const;
+    QStringList sourcePathModel() const;
+    QStringList destinationPathModel() const;
     int thumbnailRows() const;
     int thumbnailColumns() const;
     int thumbnailMaxWidth() const;
     int thumbnailMaxHeight() const;
 
 public slots:
-    void onSourcePathUrl(QUrl *sourcePathUrl);
-    void onSourcePathUrlChanged(const QUrl &sourcePathUrl);
-    void onDestinationPathUrl(QUrl *destinationPathUrl);
-    void onDestinationPathUrlChanged(const QUrl &destinationPathUrl);
+    void onSourcePathModel(QStringList *sourcePathModel);
+    void onSourcePathModelChanged(const QStringList &sourcePathModel);
+    void onDestinationPathModel(QStringList *destinationPathModel);
+    void onDestinationPathModelChanged(const QStringList &destinationPathModel);
     void onThumbnailRows(int *thumbnailRows);
     void onThumbnailRowsChanged(int thumbnailRows);
     void onThumbnailColumns(int *thumbnailColumns);

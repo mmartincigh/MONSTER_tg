@@ -9,21 +9,27 @@ Item {
 
     property bool enabled: thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed
 
-    height: destinationPathTextField.height
+    height: destinationPathComboBox.height
+
+    Connections {
+        target: destinationManager
+        onEditTextChanged: { destinationPathComboBox.editText = editText }
+    }
 
     Text {
         id: destinationPathLabel
 
         anchors.left: parent.left
         anchors.leftMargin: 20
-        anchors.verticalCenter: destinationPathTextField.verticalCenter
+        anchors.verticalCenter: destinationPathComboBox.verticalCenter
 
         text: qsTr("destination path")
     }
 
-    TextField {
-        id: destinationPathTextField
+    ComboBox {
+        id: destinationPathComboBox
 
+        height: 25
         anchors.top: parent.top
         anchors.topMargin: 20
         anchors.left: destinationPathLabel.right
@@ -31,25 +37,20 @@ Item {
         anchors.right: destinationPathBrowseButton.left
         anchors.rightMargin: 20
 
-        text: destinationManager.destinationPath
+        model: destinationManager.destinationPathModel
+        editable: true
         enabled: main.enabled
-        style: TextFieldStyle {
-            background: Rectangle {
-                border.color: destinationManager.isDestinationPathUrlValid ? "grey" : "red"
-            }
-        }
 
-        onTextChanged: { destinationManager.onUpdateDestinationPath(text) }
+        onEditTextChanged: { destinationManager.onUpdateEditText(editText) }
 
         Text {
             id: destinationPathOverlayText
 
             anchors.centerIn: parent
 
-            text: qsTr("enter destination path")
-            font.pointSize: parent.font.pointSize
+            text: qsTr("enter or select destination path")
             color: "grey"
-            opacity: parent.activeFocus || parent.length > 0 ? 0 : 1
+            opacity: parent.activeFocus || parent.editText.length > 0 ? 0 : 1
 
             Behavior on opacity {
                 NumberAnimation { duration: 125 }
@@ -62,7 +63,7 @@ Item {
 
         anchors.right: parent.right
         anchors.rightMargin: 20
-        anchors.verticalCenter: destinationPathTextField.verticalCenter
+        anchors.verticalCenter: destinationPathComboBox.verticalCenter
 
         text: qsTr("browse")
         enabled: main.enabled
@@ -77,6 +78,6 @@ Item {
         selectFolder: true
         folder: destinationManager.isDestinationPathUrlValid ? destinationManager.destinationPathUrl : shortcuts.documents
 
-        onAccepted: { destinationManager.onUpdateDestinationPathUrl(folder) }
+        onAccepted: { destinationManager.onUpdateEditText(folder) }
     }
 }

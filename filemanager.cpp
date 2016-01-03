@@ -79,17 +79,17 @@ void FileManager::setVideoFilesCount(int videoFilesCount)
     emit this->videoFilesCountChanged(m_videoFilesCount);
 }
 
-void FileManager::onSourcePathUrlChanged(const QUrl &sourcePathUrl)
+void FileManager::onSourcePathChanged(const QString &sourcePath)
 {
-    this->debug("Source path URL: " + sourcePathUrl.toString());
-    if (sourcePathUrl.isEmpty())
+    this->debug("Source path: " + sourcePath);
+    if (sourcePath.isEmpty())
     {
-        this->error("Source path URL is empty");
+        this->error("Source path is empty");
 
         return;
     }
 
-    this->onReloadVideoFiles(sourcePathUrl);
+    this->onReloadVideoFiles(sourcePath);
 }
 
 void FileManager::onVideoFiles(QStringList *videoFiles)
@@ -114,17 +114,43 @@ void FileManager::onOverwriteOutputFiles(bool *overwriteOutputFiles)
 
 void FileManager::onReloadVideoFiles()
 {
-    QUrl source_path_url;
-    emit this->sourcePathUrl(&source_path_url);
-    this->debug("Source path URL: " + source_path_url.toString());
-    if (source_path_url.isEmpty())
+    QString source_path;
+    emit this->sourcePath(&source_path);
+    this->debug("Source path: " + source_path);
+    if (source_path.isEmpty())
     {
-        this->error("Source path URL is empty");
+        this->error("Source path is empty");
 
         return;
     }
 
-    this->onReloadVideoFiles(source_path_url);
+    this->onReloadVideoFiles(source_path);
+}
+
+void FileManager::onReloadVideoFiles(const QString &sourcePath)
+{
+    if (sourcePath.isEmpty())
+    {
+        this->error("Source path is empty");
+
+        return;
+    }
+
+    // Enumerate the contents of the source path.
+    this->debug("Source path: " + sourcePath);
+    QDir source_directory(sourcePath);
+    source_directory.setNameFilters(m_NAME_FILTERS);
+    source_directory.setFilter(QDir::Files);
+    source_directory.setSorting(QDir::Name);
+    this->setVideoFiles(source_directory.entryList());
+    this->setVideoFilesCount(m_videoFiles.size());
+
+    if (m_videoFilesCount == 0)
+    {
+        this->warning("The source path contains no video files");
+
+        return;
+    }
 }
 
 void FileManager::onReloadVideoFiles(const QUrl &sourcePathUrl)

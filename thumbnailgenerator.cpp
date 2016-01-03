@@ -29,8 +29,8 @@ ThumbnailGenerator::ThumbnailGenerator(QObject *parent) :
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(thumbnailUrlChanged(QUrl)), this, SIGNAL(thumbnailUrlChanged(QUrl)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(isSourcePathUrlValid(bool*)), this, SIGNAL(isSourcePathUrlValid(bool*)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(isDestinationPathUrlValid(bool*)), this, SIGNAL(isDestinationPathUrlValid(bool*)), Qt::BlockingQueuedConnection);
-    QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(sourcePathUrl(QUrl*)), this, SIGNAL(sourcePathUrl(QUrl*)), Qt::BlockingQueuedConnection);
-    QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(destinationPathUrl(QUrl*)), this, SIGNAL(destinationPathUrl(QUrl*)), Qt::BlockingQueuedConnection);
+    QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(sourcePath(QString*)), this, SIGNAL(sourcePath(QString*)), Qt::BlockingQueuedConnection);
+    QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(destinationPath(QString*)), this, SIGNAL(destinationPath(QString*)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(videoFiles(QStringList*)), this, SIGNAL(videoFiles(QStringList*)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(overwriteOutputFiles(bool*)), this, SIGNAL(overwriteOutputFiles(bool*)), Qt::BlockingQueuedConnection);
 

@@ -8,16 +8,16 @@ ApplicationManager::ApplicationManager(QObject *parent) :
     m_thumbnailGenerator(this),
     m_settingsManager(this)
 {
-    QObject::connect(&m_sourceManager, SIGNAL(sourcePathUrl(QUrl*)), &m_settingsManager, SLOT(onSourcePathUrl(QUrl*)));
-    QObject::connect(&m_sourceManager, SIGNAL(sourcePathUrlChanged(QUrl)), &m_settingsManager, SLOT(onSourcePathUrlChanged(QUrl)));
-    QObject::connect(&m_sourceManager, SIGNAL(sourcePathUrlChanged(QUrl)), &m_fileManager, SLOT(onSourcePathUrlChanged(QUrl)));
+    QObject::connect(&m_sourceManager, SIGNAL(sourcePathModel(QStringList*)), &m_settingsManager, SLOT(onSourcePathModel(QStringList*)));
+    QObject::connect(&m_sourceManager, SIGNAL(sourcePathModelChanged(QStringList)), &m_settingsManager, SLOT(onSourcePathModelChanged(QStringList)));
+    QObject::connect(&m_sourceManager, SIGNAL(sourcePathChanged(QString)), &m_fileManager, SLOT(onSourcePathChanged(QString)));
     QObject::connect(&m_sourceManager, SIGNAL(isSourcePathUrlValidChanged(bool)), &m_thumbnailGenerator, SLOT(onIsSourcePathUrlValidChanged(bool)));
 
-    QObject::connect(&m_destinationManager, SIGNAL(destinationPathUrl(QUrl*)), &m_settingsManager, SLOT(onDestinationPathUrl(QUrl*)));
-    QObject::connect(&m_destinationManager, SIGNAL(destinationPathUrlChanged(QUrl)), &m_settingsManager, SLOT(onDestinationPathUrlChanged(QUrl)));
+    QObject::connect(&m_destinationManager, SIGNAL(destinationPathModel(QStringList*)), &m_settingsManager, SLOT(onDestinationPathModel(QStringList*)));
+    QObject::connect(&m_destinationManager, SIGNAL(destinationPathModelChanged(QStringList)), &m_settingsManager, SLOT(onDestinationPathModelChanged(QStringList)));
     QObject::connect(&m_destinationManager, SIGNAL(isDestinationPathUrlValidChanged(bool)), &m_thumbnailGenerator, SLOT(onIsDestinationPathUrlValidChanged(bool)));
 
-    QObject::connect(&m_fileManager, SIGNAL(sourcePathUrl(QUrl*)), &m_sourceManager, SLOT(onSourcePathUrl(QUrl*)));
+    QObject::connect(&m_fileManager, SIGNAL(sourcePath(QString*)), &m_sourceManager, SLOT(onSourcePath(QString*)));
 
     QObject::connect(&m_thumbnailGenerator, SIGNAL(thumbnailRows(int*)), &m_settingsManager, SLOT(onThumbnailRows(int*)));
     QObject::connect(&m_thumbnailGenerator, SIGNAL(thumbnailRowsChanged(int)), &m_settingsManager, SLOT(onThumbnailRowsChanged(int)));
@@ -29,8 +29,8 @@ ApplicationManager::ApplicationManager(QObject *parent) :
     QObject::connect(&m_thumbnailGenerator, SIGNAL(thumbnailMaxHeightChanged(int)), &m_settingsManager, SLOT(onThumbnailMaxHeightChanged(int)));
     QObject::connect(&m_thumbnailGenerator, SIGNAL(isSourcePathUrlValid(bool*)), &m_sourceManager, SLOT(onIsSourcePathUrlValid(bool*)));
     QObject::connect(&m_thumbnailGenerator, SIGNAL(isDestinationPathUrlValid(bool*)), &m_destinationManager, SLOT(onIsDestinationPathUrlValid(bool*)));
-    QObject::connect(&m_thumbnailGenerator, SIGNAL(sourcePathUrl(QUrl*)), &m_sourceManager, SLOT(onSourcePathUrl(QUrl*)));
-    QObject::connect(&m_thumbnailGenerator, SIGNAL(destinationPathUrl(QUrl*)), &m_destinationManager, SLOT(onDestinationPathUrl(QUrl*)));
+    QObject::connect(&m_thumbnailGenerator, SIGNAL(sourcePath(QString*)), &m_sourceManager, SLOT(onSourcePath(QString*)));
+    QObject::connect(&m_thumbnailGenerator, SIGNAL(destinationPath(QString*)), &m_destinationManager, SLOT(onDestinationPath(QString*)));
     QObject::connect(&m_thumbnailGenerator, SIGNAL(videoFiles(QStringList*)), &m_fileManager, SLOT(onVideoFiles(QStringList*)));
     QObject::connect(&m_thumbnailGenerator, SIGNAL(overwriteOutputFiles(bool*)), &m_fileManager, SLOT(onOverwriteOutputFiles(bool*)));
 
