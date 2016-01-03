@@ -1,4 +1,5 @@
 import QtQuick 2.5
+import QtQuick.Controls 1.4
 
 Item {
     id: main
@@ -14,6 +15,26 @@ Item {
         anchors.bottomMargin: 20
 
         text: qsTr("preview")
+    }
+
+    Text {
+        id: showPreviewLabel
+
+        anchors.right: showPreviewCheckBox.left
+        anchors.rightMargin: 20
+        anchors.bottom: previewFrame.top
+        anchors.bottomMargin: 20
+
+        text: qsTr("show")
+    }
+
+    CheckBox {
+        id: showPreviewCheckBox
+
+        anchors.right: previewFrame.right
+        anchors.verticalCenter: showPreviewLabel.verticalCenter
+
+        checked: true
     }
 
     Rectangle {
@@ -41,6 +62,10 @@ Item {
             Connections {
                 target: thumbnailGenerator
                 onThumbnailUrlChanged: {
+                    if (!showPreviewCheckBox.checked) {
+                        previewImage.source = "";
+                        return;
+                    }
                     if (thumbnailUrl == "") {
                         imageFadeInAnimation.complete();
                         imageFadeOutAnimation.start();
