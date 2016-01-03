@@ -7,7 +7,7 @@ Window {
     signal completed()
 
     width: 800
-    height: 450
+    height: 460
     minimumWidth: width
     minimumHeight: height
     maximumWidth: width

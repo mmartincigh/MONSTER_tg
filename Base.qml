@@ -55,4 +55,15 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: 20
     }
+
+    Text {
+        id: version
+
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 5
+        anchors.right: parent.right
+        anchors.rightMargin: 5
+
+        text: qsTr("version ") + application.applicationVersion
+    }
 }
