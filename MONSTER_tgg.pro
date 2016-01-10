@@ -108,6 +108,8 @@ win32 {
 
 win32 {
     OTHER_FILES += \
+        "$$PWD/ffmpeg/bin/ffmpeg.exe" \
+        "$$PWD/ffmpeg/bin/ffprobe.exe" \
         $(QTDIR)/bin/D3DCompiler_43.dll \
         $(QTDIR)/bin/icudt54.dll \
         $(QTDIR)/bin/icuin54.dll \
