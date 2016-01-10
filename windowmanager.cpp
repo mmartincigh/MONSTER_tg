@@ -4,4 +4,3 @@ WindowManager::WindowManager()
 {
 
 }
-
