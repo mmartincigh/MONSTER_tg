@@ -11,7 +11,9 @@ class Utils
 private:
     static const QUrl::FormattingOptions m_URL_CONVERSION_FLAGS;
     static const QRegExp m_FILE_SCHEME_REG_EXP;
+#if defined(Q_OS_WIN)
     static const QRegExp m_LEADING_SLASHES_REG_EXP;
+#endif
 
 public:
     static QString urlToString(const QUrl &url);

@@ -2,6 +2,7 @@
 #define LOGMANAGER_H
 
 #include <QObject>
+#include <QMutex>
 #include <QDebug>
 
 class LogManager : public QObject

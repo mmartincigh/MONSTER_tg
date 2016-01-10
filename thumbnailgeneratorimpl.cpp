@@ -1,4 +1,8 @@
+#if defined(Q_OS_WIN)
 #include <Windows.h>
+#else
+#define MAX_PATH 260
+#endif
 
 #include <QDir>
 #include <QTemporaryDir>
@@ -36,9 +40,9 @@ ThumbnailGeneratorImpl::ThumbnailGeneratorImpl(QMutex *mutex, QWaitCondition *wa
     m_skipped(0),
     m_overwritten(0),
     m_processed(0),
-    m_mutex(mutex),
     m_currentInputFile(m_CURRENT_INPUT_FILE_NONE),
     m_thumbnailUrl(),
+    m_mutex(mutex),
     m_waitCondition(waitCondition)
 {
     QObject::connect(this, SIGNAL(stateChanged(Enums::State)), this, SLOT(onStateChanged(Enums::State)));

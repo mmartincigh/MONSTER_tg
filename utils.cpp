@@ -1,12 +1,18 @@
 #include "utils.h"
 
 const QUrl::FormattingOptions Utils::m_URL_CONVERSION_FLAGS(QUrl::PrettyDecoded | QUrl::PreferLocalFile);
-const QRegExp Utils::m_FILE_SCHEME_REG_EXP("^[file://]");
-const QRegExp Utils::m_LEADING_SLASHES_REG_EXP("^[/]*");
+const QRegExp Utils::m_FILE_SCHEME_REG_EXP("^file://");
+#if defined(Q_OS_WIN)
+const QRegExp Utils::m_LEADING_SLASHES_REG_EXP("^/*");
+#endif
 
 QString Utils::urlToString(const QUrl &url)
 {
-    return url.toString(m_URL_CONVERSION_FLAGS).remove(m_FILE_SCHEME_REG_EXP).remove(m_LEADING_SLASHES_REG_EXP);
+    QString string = url.toString(m_URL_CONVERSION_FLAGS).remove(m_FILE_SCHEME_REG_EXP);
+#if defined(Q_OS_WIN)
+    string.remove(m_LEADING_SLASHES_REG_EXP);
+#endif
+    return string;
 }
 
 QString Utils::thumbnailGenerationStateToString(Enums::State thumbnailGenerationState)

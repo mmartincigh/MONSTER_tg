@@ -6,7 +6,8 @@ ApplicationManager::ApplicationManager(QObject *parent) :
     m_destinationManager(this),
     m_fileManager(this),
     m_thumbnailGenerator(this),
-    m_settingsManager(this)
+    m_settingsManager(this),
+    m_windowManager(this)
 {
     QObject::connect(&m_sourceManager, SIGNAL(sourcePathModel(QStringList*)), &m_settingsManager, SLOT(onSourcePathModel(QStringList*)));
     QObject::connect(&m_sourceManager, SIGNAL(sourcePathModelChanged(QStringList)), &m_settingsManager, SLOT(onSourcePathModelChanged(QStringList)));
@@ -70,6 +71,11 @@ FileManager *ApplicationManager::fileManager()
 ThumbnailGenerator *ApplicationManager::thumbnailGenerator()
 {
     return &m_thumbnailGenerator;
+}
+
+WindowManager *ApplicationManager::windowManager()
+{
+    return &m_windowManager;
 }
 
 void ApplicationManager::onCompleted()

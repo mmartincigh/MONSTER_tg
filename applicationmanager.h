@@ -10,6 +10,7 @@
 #include "filemanager.h"
 #include "thumbnailgenerator.h"
 #include "settingsmanager.h"
+#include "windowmanager.h"
 
 class ApplicationManager : public Base
 {
@@ -21,6 +22,7 @@ private:
     FileManager m_fileManager;
     ThumbnailGenerator m_thumbnailGenerator;
     SettingsManager m_settingsManager;
+    WindowManager m_windowManager;
 
 public:
     explicit ApplicationManager(QObject *parent = NULL);
@@ -32,6 +34,7 @@ public:
     DestinationManager *destinationManager();
     FileManager *fileManager();
     ThumbnailGenerator *thumbnailGenerator();
+    WindowManager *windowManager();
 
 public slots:
     void onCompleted();

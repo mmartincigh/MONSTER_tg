@@ -4,7 +4,11 @@
 #include "utils.h"
 
 const int SourceManager::m_MAX_MODEL_SIZE(5);
+#if defined(Q_OS_WIN)
 const QString SourceManager::m_URL_FILE_SCHEME("file:///");
+#else
+const QString SourceManager::m_URL_FILE_SCHEME("file://");
+#endif
 
 SourceManager::SourceManager(QObject *parent) :
     Base("SRCM", parent),
