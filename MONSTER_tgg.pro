@@ -2,7 +2,7 @@ TARGET = MONSTER_tgg
 
 TEMPLATE = app
 
-VERSION = 2.0.0
+VERSION = 2.0.1
 
 QT += \
     qml \
@@ -149,6 +149,6 @@ win32 {
 win32 {
     for(FILE, OTHER_FILES){
         QMAKE_POST_LINK += \
-            $$quote(copy \Y \"$$shell_path($${FILE})\" \"$$shell_path($${DESTDIR})\"$$escape_expand(/n/t))
+            $$quote(copy /Y \"$$shell_path($${FILE})\" \"$$shell_path($${DESTDIR})\"$$escape_expand(\n\t))
     }
 }
