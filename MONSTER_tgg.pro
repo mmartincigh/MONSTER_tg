@@ -2,7 +2,7 @@ TARGET = MONSTER_tgg
 
 TEMPLATE = app
 
-VERSION = 2.0.1
+VERSION = 2.0.2
 
 QT += \
     qml \

@@ -39,6 +39,7 @@ public:
 
 public:
     void initialize();
+    void uninitialize();
     bool isEnabled() const;
     int thumbnailRows() const;
     int thumbnailColumns() const;

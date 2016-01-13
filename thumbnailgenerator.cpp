@@ -39,6 +39,7 @@ ThumbnailGenerator::ThumbnailGenerator(QObject *parent) :
 
 ThumbnailGenerator::~ThumbnailGenerator()
 {
+    this->uninitialize();
     this->onStop();
 
     m_thumbnailGeneratorImplThread.quit();
@@ -55,6 +56,14 @@ void ThumbnailGenerator::initialize()
     m_thumbnailGeneratorImplThread.start();
 
     this->debug("Initialized");
+}
+
+void ThumbnailGenerator::uninitialize()
+{
+    // Disconnect all the thumbnail generator implementation's signals during shut down to avoid deadlocks.
+    QObject::disconnect(m_thumbnailGeneratorImplSptr.data(), NULL, NULL, NULL);
+
+    this->debug("Uninitialized");
 }
 
 bool ThumbnailGenerator::isEnabled() const
