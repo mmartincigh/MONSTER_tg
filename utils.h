@@ -19,6 +19,7 @@ public:
     static QString urlToString(const QUrl &url);
     static QString thumbnailGenerationStateToString(Enums::State state);
     static QString progressToString(float progress);
+    static unsigned int levenshteinDistance(const std::string &fromString, const std::string &toString);
 };
 
 #endif // UTILS_H
