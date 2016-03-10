@@ -1,4 +1,4 @@
-TARGET = MONSTER_tgg
+TARGET = MONSTER_tg
 
 TEMPLATE = app
 

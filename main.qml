@@ -11,7 +11,7 @@ Window {
     width: 800
     height: 460
 
-    title: "MONSTER_tgg"
+    title: "MONSTER_tg"
     flags: windowManager.windowFlags
     minimumWidth: width
     minimumHeight: height
