@@ -2,7 +2,7 @@ TARGET = MONSTER_tg
 
 TEMPLATE = app
 
-VERSION = 2.1.0
+VERSION = 3.0.0
 
 QT += \
     qml \
@@ -45,19 +45,19 @@ unix {
 win32 {
     CONFIG(debug, debug|release) {
         LIBS += \
-            -L"Z:/OpenCV/current/build/x86/vc10/lib/Debug" \
-            -lopencv_core300d \
-            -lopencv_highgui300d \
-            -lopencv_imgproc300d \
-            -lopencv_imgcodecs300d
+            -L"Z:/OpenCV/current/build/x64/vc14/lib/Debug" \
+            -lopencv_core310d \
+            -lopencv_highgui310d \
+            -lopencv_imgproc310d \
+            -lopencv_imgcodecs310d
     }
     CONFIG(release, debug|release) {
         LIBS += \
-            -L"Z:/OpenCV/current/build/x86/vc10/lib/Release" \
-            -lopencv_core300 \
-            -lopencv_highgui300 \
-            -lopencv_imgproc300 \
-            -lopencv_imgcodecs300
+            -L"Z:/OpenCV/current/build/x64/vc14/lib/Release" \
+            -lopencv_core310 \
+            -lopencv_highgui310 \
+            -lopencv_imgproc310 \
+            -lopencv_imgcodecs310
     }
 }
 unix {
@@ -110,7 +110,7 @@ win32 {
     OTHER_FILES += \
         "$$PWD/ffmpeg/bin/ffmpeg.exe" \
         "$$PWD/ffmpeg/bin/ffprobe.exe" \
-        $(QTDIR)/bin/D3DCompiler_43.dll \
+        $(QTDIR)/bin/d3dcompiler_47.dll \
         $(QTDIR)/bin/icudt54.dll \
         $(QTDIR)/bin/icuin54.dll \
         $(QTDIR)/bin/icuuc54.dll
@@ -124,11 +124,11 @@ win32 {
             $(QTDIR)/bin/Qt5Qmld.dll \
             $(QTDIR)/bin/Qt5Quickd.dll \
             $(QTDIR)/bin/Qt5Widgetsd.dll \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Debug/opencv_core300d.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Debug/opencv_highgui300d.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Debug/opencv_imgcodecs300d.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Debug/opencv_imgproc300d.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Debug/opencv_videoio300d.dll"
+            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_core310d.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_highgui310d.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgcodecs310d.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgproc310d.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_videoio310d.dll"
     }
     CONFIG(release, debug|release) {
         OTHER_FILES += \
@@ -140,11 +140,11 @@ win32 {
             $(QTDIR)/bin/Qt5Qml.dll \
             $(QTDIR)/bin/Qt5Quick.dll \
             $(QTDIR)/bin/Qt5Widgets.dll \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Release/opencv_core300.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Release/opencv_highgui300.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Release/opencv_imgcodecs300.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Release/opencv_imgproc300.dll" \
-            "Z:/OpenCV/current/build/x86/vc10/bin/Release/opencv_videoio300.dll"
+            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_core310.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_highgui310.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgcodecs310.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgproc310.dll" \
+            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_videoio310.dll"
     }
 }
 
