@@ -2,7 +2,7 @@ TARGET = MONSTER_tg
 
 TEMPLATE = app
 
-VERSION = 3.0.0
+VERSION = 3.1.0
 
 QT += \
     qml \
@@ -110,10 +110,13 @@ win32 {
     OTHER_FILES += \
         "$$PWD/ffmpeg/bin/ffmpeg.exe" \
         "$$PWD/ffmpeg/bin/ffprobe.exe" \
-        $(QTDIR)/bin/d3dcompiler_47.dll \
-        $(QTDIR)/bin/icudt54.dll \
-        $(QTDIR)/bin/icuin54.dll \
-        $(QTDIR)/bin/icuuc54.dll
+        $(QTDIR)/bin/d3dcompiler_47.dll
+    lessThan(QT_MINOR_VERSION, 7) {
+        OTHER_FILES += \
+            $(QTDIR)/bin/icudt54.dll \
+            $(QTDIR)/bin/icuin54.dll \
+            $(QTDIR)/bin/icuuc54.dll
+    }
     CONFIG(debug, debug|release) {
         OTHER_FILES += \
             $(QTDIR)/bin/libEGLd.dll \

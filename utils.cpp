@@ -39,7 +39,7 @@ QString Utils::progressToString(float progress)
     return QString("%1 %").arg(progress * 100, 0, 'f', 1);
 }
 
-unsigned int Utils::levenshteinDistance(const std::string &fromString, const std::string &toString)
+size_t Utils::levenshteinDistance(const std::string &fromString, const std::string &toString)
 {
     const size_t from_string_size = fromString.size();
     const size_t to_string_size = toString.size();
