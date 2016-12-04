@@ -1031,9 +1031,49 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             continue;
         }
 
-        // Write the output thumbnail.
+        // Resize the output thumbnail.
         cv::Mat output_thumbnail_final;
         cv::resize(output_thumbnail, output_thumbnail_final, output_thumbnail_final_size);
+
+        // Prepare the text to put on the output thumbnail.
+        std::string text = input_file_info.fileName().toStdString();
+        size_t text_length = text.length();
+        int text_left_margin = 10;
+        int text_bottom_margin = 10;
+        int text_font_face = cv::FONT_HERSHEY_SIMPLEX;
+        double text_font_scale = 1;
+        int text_thickness = 1;
+        while (text_length > 0)
+        {
+            int text_baseline = 0;
+            cv::Size text_size = cv::getTextSize(text, text_font_face, text_font_scale, text_thickness, &text_baseline);
+            if (text_size.width < output_thumbnail_final_size.width - text_left_margin)
+            {
+                // The text fits, add ellipsis if necessary.
+                if (text_length > 3)
+                {
+                    // Turn the last 3 characters into ellipsis.
+                    text.replace(text_length - 3, 3, 3, '.');
+                }
+
+                break;
+            }
+            text.pop_back();
+            text_length = text.length();
+        }
+        if (text_length > 0)
+        {
+            // Put the filename on the output thumbnail.
+            cv::Point text_org(text_left_margin, output_thumbnail_final.rows - text_bottom_margin);
+            cv::putText(output_thumbnail_final, text, text_org, text_font_face, text_font_scale, cv::Scalar::all(255), text_thickness, cv::LINE_8, false);
+            this->debug("Filename added to output thumbnail");
+        }
+        else
+        {
+            this->warning("Cannot add filename to output thumbnail");
+        }
+
+        // Write the output thumbnail.
         ret_val = imwrite(output_file.toStdString(), output_thumbnail_final);
         if (!ret_val)
         {
