@@ -109,7 +109,7 @@ Item {
         maximumLength: 5
         validator: IntValidator {
             bottom: 1
-            top: 1000
+            top: 2000
         }
         style: TextFieldStyle {
             background: Rectangle {
@@ -148,7 +148,7 @@ Item {
         maximumLength: 5
         validator: IntValidator {
             bottom: 1
-            top: 1000
+            top: 2000
         }
         style: TextFieldStyle {
             background: Rectangle {

@@ -12,9 +12,9 @@ const int SettingsManager::m_FALL_BACK_THUMBNAIL_ROWS(6);
 const QString SettingsManager::m_THUMBNAIL_COLUMNS_KEY("thumbnailGenerator/thumbnailColumns");
 const int SettingsManager::m_FALL_BACK_THUMBNAIL_COLUMNS(3);
 const QString SettingsManager::m_THUMBNAIL_MAX_WIDTH_KEY("thumbnailGenerator/thumbnailMaxWidth");
-const int SettingsManager::m_FALL_BACK_THUMBNAIL_MAX_WIDTH(600);
+const int SettingsManager::m_FALL_BACK_THUMBNAIL_MAX_WIDTH(1200);
 const QString SettingsManager::m_THUMBNAIL_MAX_HEIGHT_KEY("thumbnailGenerator/thumbnailMaxHeight");
-const int SettingsManager::m_FALL_BACK_THUMBNAIL_MAX_HEIGHT(600);
+const int SettingsManager::m_FALL_BACK_THUMBNAIL_MAX_HEIGHT(1200);
 
 SettingsManager::SettingsManager(QObject *parent) :
     Base("SM", parent),

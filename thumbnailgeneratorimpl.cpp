@@ -1042,12 +1042,13 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         int text_bottom_margin = 10;
         int text_font_face = cv::FONT_HERSHEY_SIMPLEX;
         double text_font_scale = 1;
-        int text_thickness = 1;
+        int text_thickness = 2;
+        int output_thumbnail_final_usable_width = output_thumbnail_final_size.width - text_left_margin;
         while (text_length > 0)
         {
             int text_baseline = 0;
             cv::Size text_size = cv::getTextSize(text, text_font_face, text_font_scale, text_thickness, &text_baseline);
-            if (text_size.width < output_thumbnail_final_size.width - text_left_margin)
+            if (text_size.width < output_thumbnail_final_usable_width)
             {
                 // The text fits, add ellipsis if necessary.
                 if (text_length > 3)
