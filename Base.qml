@@ -51,18 +51,18 @@ Item {
         id: previewPanel
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 20
+        anchors.bottomMargin: 10
         anchors.right: parent.right
-        anchors.rightMargin: 20
+        anchors.rightMargin: 10
     }
 
     Text {
         id: version
 
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 5
-        anchors.right: parent.right
-        anchors.rightMargin: 5
+        anchors.bottomMargin: 10
+        anchors.left: parent.left
+        anchors.leftMargin: 10
 
         text: qsTr("version ") + application.applicationVersion
     }

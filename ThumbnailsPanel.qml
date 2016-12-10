@@ -14,12 +14,13 @@ Item {
         anchors.verticalCenter: thumbnailRowsTextField.verticalCenter
 
         text: qsTr("thumbnail rows")
+        font.pointSize: 10
     }
 
     TextField {
         id: thumbnailRowsTextField
 
-        width: 50
+        width: 80
 
         anchors.top: parent.top
         anchors.topMargin: 20
@@ -27,6 +28,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.thumbnailRows
+        font.pointSize: 10
         enabled: thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed
         maximumLength: 5
         validator: IntValidator {
@@ -53,12 +55,13 @@ Item {
         anchors.verticalCenter: thumbnailColumnsTextField.verticalCenter
 
         text: qsTr("thumbnail columns")
+        font.pointSize: 10
     }
 
     TextField {
         id: thumbnailColumnsTextField
 
-        width: 50
+        width: 80
 
         anchors.top: parent.top
         anchors.topMargin: 20
@@ -66,6 +69,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.thumbnailColumns
+        font.pointSize: 10
         enabled: thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed
         maximumLength: 5
         validator: IntValidator {
@@ -92,12 +96,13 @@ Item {
         anchors.verticalCenter: thumbnailMaxWidthTextField.verticalCenter
 
         text: qsTr("thumbnail max width")
+        font.pointSize: 10
     }
 
     TextField {
         id: thumbnailMaxWidthTextField
 
-        width: 50
+        width: 100
 
         anchors.top: thumbnailRowsTextField.bottom
         anchors.topMargin: 20
@@ -105,6 +110,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.thumbnailMaxWidth
+        font.pointSize: 10
         enabled: thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed
         maximumLength: 5
         validator: IntValidator {
@@ -131,12 +137,13 @@ Item {
         anchors.verticalCenter: thumbnailMaxHeightTextField.verticalCenter
 
         text: qsTr("thumbnail max height")
+        font.pointSize: 10
     }
 
     TextField {
         id: thumbnailMaxHeightTextField
 
-        width: 50
+        width: 100
 
         anchors.top: thumbnailRowsTextField.bottom
         anchors.topMargin: 20
@@ -144,6 +151,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.thumbnailMaxHeight
+        font.pointSize: 10
         enabled: thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed
         maximumLength: 5
         validator: IntValidator {
@@ -183,7 +191,7 @@ Item {
         id: progressBar
 
         anchors.top: thumbnailMaxWidthTextField.bottom
-        anchors.topMargin: 20
+        anchors.topMargin: 40
         anchors.left: generateThumbnailsButton.right
         anchors.leftMargin: 20
         anchors.right: generateThumbnailsStatus.left
@@ -202,13 +210,14 @@ Item {
         anchors.verticalCenter: progressBar.verticalCenter
 
         text: qsTr(thumbnailGenerator.stateDescription)
+        font.pointSize: 10
     }
 
     Button {
         id: pauseButton
 
         anchors.top: progressBar.bottom
-        anchors.topMargin: 20
+        anchors.topMargin: 40
         anchors.left: parent.left
         anchors.leftMargin: 20
 
@@ -222,7 +231,7 @@ Item {
         id: resumeButton
 
         anchors.top: progressBar.bottom
-        anchors.topMargin: 20
+        anchors.topMargin: 40
         anchors.left: pauseButton.right
         anchors.leftMargin: 20
 
@@ -236,7 +245,7 @@ Item {
         id: stopButton
 
         anchors.top: progressBar.bottom
-        anchors.topMargin: 20
+        anchors.topMargin: 40
         anchors.left: resumeButton.right
         anchors.leftMargin: 20
 
@@ -254,6 +263,7 @@ Item {
         anchors.verticalCenter: stopButton.verticalCenter
 
         text: qsTr("progress:")
+        font.pointSize: 10
     }
 
     Text {
@@ -264,6 +274,7 @@ Item {
         anchors.verticalCenter: stopButton.verticalCenter
 
         text: thumbnailGenerator.progressString
+        font.pointSize: 10
     }
 
     Text {
@@ -275,6 +286,7 @@ Item {
         anchors.leftMargin: 20
 
         text: qsTr("errors:")
+        font.pointSize: 10
     }
 
     Text {
@@ -285,6 +297,7 @@ Item {
         anchors.left: skipped.left
 
         text: thumbnailGenerator.errors
+        font.pointSize: 10
         color: thumbnailGenerator.errors > 0 ? "red" : "black"
     }
 
@@ -293,10 +306,10 @@ Item {
 
         anchors.top: pauseButton.bottom
         anchors.topMargin: 20
-        anchors.left: parent.left
-        anchors.leftMargin: 140
+        anchors.left: overwrittenLabel.left
 
         text: qsTr("warnings:")
+        font.pointSize: 10
     }
 
     Text {
@@ -307,6 +320,7 @@ Item {
         anchors.left: overwritten.left
 
         text: thumbnailGenerator.warnings
+        font.pointSize: 10
         color: thumbnailGenerator.warnings > 0 ? "orange" : "black"
     }
 
@@ -319,6 +333,7 @@ Item {
         anchors.leftMargin: 20
 
         text: qsTr("skipped:")
+        font.pointSize: 10
     }
 
     Text {
@@ -330,6 +345,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.skipped
+        font.pointSize: 10
         color: thumbnailGenerator.skipped > 0 ? "blue" : "black"
     }
 
@@ -339,9 +355,10 @@ Item {
         anchors.top: errorsLabel.bottom
         anchors.topMargin: 20
         anchors.left: parent.left
-        anchors.leftMargin: 140
+        anchors.leftMargin: 240
 
         text: qsTr("overwritten:")
+        font.pointSize: 10
     }
 
     Text {
@@ -353,6 +370,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.overwritten
+        font.pointSize: 10
         color: thumbnailGenerator.overwritten > 0 ? "blue" : "black"
     }
 
@@ -362,9 +380,10 @@ Item {
         anchors.top: errorsLabel.bottom
         anchors.topMargin: 20
         anchors.left: overwrittenLabel.right
-        anchors.leftMargin: 80
+        anchors.leftMargin: 100
 
         text: qsTr("processed:")
+        font.pointSize: 10
     }
 
     Text {
@@ -376,6 +395,7 @@ Item {
         anchors.leftMargin: 20
 
         text: thumbnailGenerator.processed
+        font.pointSize: 10
         color: thumbnailGenerator.processed > 0 ? "green" : "black"
     }
 
@@ -388,6 +408,7 @@ Item {
         anchors.leftMargin: 20
 
         text: qsTr("current input file:")
+        font.pointSize: 10
     }
 
     Text {
@@ -401,6 +422,7 @@ Item {
         anchors.rightMargin: 20
 
         text: thumbnailGenerator.currentInputFile
+        font.pointSize: 10
         clip: true
     }
 }

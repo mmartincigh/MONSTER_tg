@@ -15,6 +15,7 @@ Item {
         anchors.verticalCenter: reloadVideoFilesButton.verticalCenter
 
         text: qsTr("video files count:")
+        font.pointSize: 10
     }
 
     Text {
@@ -25,6 +26,7 @@ Item {
         anchors.verticalCenter: reloadVideoFilesButton.verticalCenter
 
         text: fileManager.videoFilesCount
+        font.pointSize: 10
     }
 
     Button {
@@ -33,7 +35,7 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: 20
         anchors.left: videoFilesCountLabel.right
-        anchors.leftMargin: 80
+        anchors.leftMargin: 100
 
         text: qsTr("reload")
         enabled: thumbnailGenerator.isEnabled && (thumbnailGenerator.state === Enums.Idle || thumbnailGenerator.state === Enums.Stopped || thumbnailGenerator.state === Enums.Completed)
@@ -49,6 +51,7 @@ Item {
         anchors.verticalCenter: reloadVideoFilesButton.verticalCenter
 
         text: qsTr("overwrite output files")
+        font.pointSize: 10
     }
 
     CheckBox {

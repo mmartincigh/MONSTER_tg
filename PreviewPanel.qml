@@ -15,6 +15,7 @@ Item {
         anchors.bottomMargin: 20
 
         text: qsTr("preview")
+        font.pointSize: 10
     }
 
     Text {
@@ -26,6 +27,7 @@ Item {
         anchors.bottomMargin: 20
 
         text: qsTr("show")
+        font.pointSize: 10
     }
 
     CheckBox {
@@ -40,8 +42,8 @@ Item {
     Rectangle {
         id: previewFrame
 
-        width: 202
-        height: 202
+        width: 402
+        height: 402
 
         anchors.centerIn: parent
 
@@ -53,8 +55,8 @@ Item {
 
             anchors.centerIn: parent
 
-            sourceSize.width: 200
-            sourceSize.height: 200
+            sourceSize.width: 400
+            sourceSize.height: 400
             fillMode: Image.PreserveAspectFit
             cache: false
             opacity: 0
