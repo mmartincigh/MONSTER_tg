@@ -337,7 +337,7 @@ void ThumbnailGeneratorImpl::setErrors(int errors)
 
     m_errors = errors;
 
-    this->debug("Errors changed: " + m_errors);
+    this->debug("Errors changed: " + QString::number(m_errors));
 
     emit this->errorsChanged(m_errors);
 }
@@ -351,7 +351,7 @@ void ThumbnailGeneratorImpl::setWarnings(int warnings)
 
     m_warnings = warnings;
 
-    this->debug("Warnings changed: " + m_warnings);
+    this->debug("Warnings changed: " + QString::number(m_warnings));
 
     emit this->warningsChanged(m_warnings);
 }
@@ -1074,8 +1074,16 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->warning("Cannot add filename to output thumbnail");
         }
 
-        // Write the output thumbnail.
-        ret_val = imwrite(output_file.toStdString(), output_thumbnail_final);
+        // Convert the output thumbnail to QImage.
+        QImage output_thumbnail_image(output_thumbnail_final.data,
+                                      output_thumbnail_final.cols,
+                                      output_thumbnail_final.rows,
+                                      static_cast<int>(output_thumbnail_final.step),
+                                      QImage::Format_RGB888);
+        output_thumbnail_final.deallocate(); // Release the memory for good measure.
+
+        // Write the output thumbnail (mind the RBG swap).
+        ret_val = output_thumbnail_image.rgbSwapped().save(output_file);
         if (!ret_val)
         {
             this->error("Cannot write output thumbnail: " + output_file);
