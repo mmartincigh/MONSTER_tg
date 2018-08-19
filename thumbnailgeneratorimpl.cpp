@@ -979,7 +979,16 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
 
         // Initialize the SWS context for software scaling.
-        struct SwsContext* sws_context = sws_getContext(av_codec_context->width, av_codec_context->height, av_codec_context->pix_fmt, av_codec_context->width, av_codec_context->height, AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+        struct SwsContext* sws_context = sws_getContext(av_codec_context->width,
+                                                        av_codec_context->height,
+                                                        av_codec_context->pix_fmt,
+                                                        av_codec_context->width,
+                                                        av_codec_context->height,
+                                                        AV_PIX_FMT_BGR24,
+                                                        SWS_BILINEAR,
+                                                        nullptr,
+                                                        nullptr,
+                                                        nullptr);
         if (!sws_context)
         {
             this->error("Cannot get SWS context");

@@ -17,7 +17,7 @@ int AVUtils::decodeFrame(AVFormatContext* avFormatContext, int videoStreamIndex,
             || !avCodecContext
             || !outAvFrame)
     {
-        cerr << "Invalid argument(s)" << endl;
+        cerr << "decodeFrame: Invalid argument(s)" << endl;
 
         return -1;
     }
@@ -58,19 +58,22 @@ int AVUtils::convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecC
             || !avFrame
             || !avFrameRgb)
     {
-        cerr << "Invalid argument(s)" << endl;
+        cerr << "convertAvFrameToCvMat: Invalid argument(s)" << endl;
 
         return -1;
     }
 
     // Convert the image from its native format to RGB.
-    sws_scale(swsContext, reinterpret_cast<uint8_t const* const*>(avFrame->data), avFrame->linesize, 0, avCodecContext->height, avFrameRgb->data, avFrameRgb->linesize);
+    sws_scale(swsContext,
+              reinterpret_cast<uint8_t const* const*>(avFrame->data),
+              avFrame->linesize,
+              0,
+              avCodecContext->height,
+              avFrameRgb->data,
+              avFrameRgb->linesize);
 
     // Convert the frame to OpenCV Mat.
     cv::Mat cv_image(avFrame->height, avFrame->width, CV_8UC3, avFrameRgb->data[0]);
-
-    // Swap channels from BGR to RGB.
-    cv::cvtColor(cv_image, cv_image, CV_BGR2RGB);
 
     // Return the CV image.
     outCvImage = move(cv_image);
