@@ -11,6 +11,7 @@
 #include "thumbnailgenerator.h"
 #include "settingsmanager.h"
 #include "windowmanager.h"
+#include "imageprovider.h"
 
 class ApplicationManager : public Base
 {
@@ -23,6 +24,7 @@ private:
     ThumbnailGenerator m_thumbnailGenerator;
     SettingsManager m_settingsManager;
     WindowManager m_windowManager;
+    ImageProvider *m_imageProvider;
 
 public:
     explicit ApplicationManager(QObject *parent = NULL);
@@ -35,6 +37,7 @@ public:
     FileManager *fileManager();
     ThumbnailGenerator *thumbnailGenerator();
     WindowManager *windowManager();
+    ImageProvider *imageProvider();
 
 public slots:
     void onCompleted();

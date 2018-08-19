@@ -11,12 +11,21 @@
 #include <QTime>
 #include <QImageReader>
 #include <QtMath>
+#include <QPainter>
+
+extern "C"
+{
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "thumbnailgeneratorimpl.h"
 #include "utils.h"
+#include "avutils.h"
 
 const QString ThumbnailGeneratorImpl::m_CURRENT_INPUT_FILE_NONE("none");
 const QString ThumbnailGeneratorImpl::m_OUTPUT_FILE_EXTENSION(".png");
@@ -47,6 +56,9 @@ ThumbnailGeneratorImpl::ThumbnailGeneratorImpl(QMutex *mutex, QWaitCondition *wa
 {
     QObject::connect(this, SIGNAL(stateChanged(Enums::State)), this, SLOT(onStateChanged(Enums::State)));
     QObject::connect(this, SIGNAL(progressChanged(float)), this, SLOT(onProgressChanged(float)));
+
+    // Register all formats and codecs.
+    av_register_all();
 
     this->debug("Thumbnail generator implementation created");
 }
@@ -186,6 +198,11 @@ QString ThumbnailGeneratorImpl::currentInputFile() const
 QUrl ThumbnailGeneratorImpl::thumbnailUrl() const
 {
     return m_thumbnailUrl;
+}
+
+QImage ThumbnailGeneratorImpl::thumbnail() const
+{
+    return m_thumbnail;
 }
 
 void ThumbnailGeneratorImpl::setIsEnabled(bool isEnabled)
@@ -426,6 +443,20 @@ void ThumbnailGeneratorImpl::setThumbnailUrl(const QUrl &thumbnailUrl)
     emit this->thumbnailUrlChanged(m_thumbnailUrl);
 }
 
+void ThumbnailGeneratorImpl::setThumbnail(const QImage &thumbnail)
+{
+    if (m_thumbnail == thumbnail)
+    {
+        return;
+    }
+
+    m_thumbnail = thumbnail;
+
+    this->debug("Thumbnail changed");
+
+    emit this->thumbnailChanged(m_thumbnail);
+}
+
 bool ThumbnailGeneratorImpl::checkIfEnabled()
 {
     bool is_source_url_path_valid = false;
@@ -653,7 +684,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
     }
 
     // Prepare the fallback thumbnail beforehand.
-    cv::Mat no_thumbnail(m_noThumbnailImage.height(), m_noThumbnailImage.width(), CV_8UC3, const_cast<uchar *>(m_noThumbnailImage.bits()), m_noThumbnailImage.bytesPerLine());
+    cv::Mat cv_no_thumbnail(m_noThumbnailImage.height(), m_noThumbnailImage.width(), CV_8UC3, const_cast<uchar *>(m_noThumbnailImage.bits()), m_noThumbnailImage.bytesPerLine());
 
     // Generate the thumbnails.
     float total_progress = video_files.size() * thumbnail_number;
@@ -666,6 +697,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
     this->setProcessed(0);
     this->setCurrentInputFile(m_CURRENT_INPUT_FILE_NONE);
     this->setThumbnailUrl(QUrl());
+    this->setThumbnail(QImage());
     this->setState(Enums::Working);
     for (int i = 0; i < video_files.size(); i++)
     {
@@ -710,177 +742,291 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
         QString output_file = output_file_info.absoluteFilePath();
 
-        // Create the temporary directory for the thumbnails.
-        QTemporaryDir temporary_directory;
-        if (!temporary_directory.isValid())
-        {
-            this->error("Cannot create a temporary directory");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        QString temporary_path = temporary_directory.path();
-        this->debug("Temporary directory: " + temporary_path);
-
         // Check whether the process should be paused, resumed or stopped.
         if (!this->processStateCheckpoint())
         {
             return;
         }
 
+        // Open the video file.
+        AVFormatContext* av_format_context = nullptr;
+        int av_ret_val = avformat_open_input(&av_format_context, input_file.toStdString().c_str(), nullptr, nullptr);
+        if (av_ret_val < 0)
+        {
+            this->error("Cannot open file \"" + input_file + "\" " + AVUtils::avErrorToString(av_ret_val));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        if (!av_format_context)
+        {
+            this->error("Invalid format context for file \"" + input_file + "\"");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+
+        // Retrieve the stream information.
+        av_ret_val = avformat_find_stream_info(av_format_context, nullptr);
+        if (av_ret_val < 0)
+        {
+            this->error("Cannot find the stream information: " + AVUtils::avErrorToString((av_ret_val)));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Find the first video stream.
+        int video_stream_index = -1;
+        for (unsigned int i = 0; i < av_format_context->nb_streams; i++)
+        {
+            if (av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            {
+                video_stream_index = i;
+                break;
+            }
+        }
+        if (video_stream_index == -1)
+        {
+            this->error("Cannot find a video stream for file \"" + input_file + "\"");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Get the video stream.
+        AVStream* av_video_stream = av_format_context->streams[video_stream_index];
+        if (!av_video_stream)
+        {
+            this->error("No video stream for file \"" + input_file + "\"");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Get the codec context for the video stream.
+        AVCodecContext* av_codec_context_original = av_video_stream->codec;
+        if (!av_codec_context_original)
+        {
+            this->error("No codec context for file \"" + input_file + "\"");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Find the decoder for the video stream.
+        AVCodec* av_codec = avcodec_find_decoder(av_codec_context_original->codec_id);
+        if (!av_codec)
+        {
+            this->error("Unsupported codec for codec id " + av_codec_context_original->codec_id);
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Copy the codec context.
+        AVCodecContext* av_codec_context = avcodec_alloc_context3(av_codec);
+        if (!av_codec_context)
+        {
+            this->error("Cannot create the codec context");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+        av_ret_val = avcodec_copy_context(av_codec_context, av_codec_context_original);
+        if (av_ret_val < 0)
+        {
+            this->error("Cannot copy the codec context: " + AVUtils::avErrorToString(av_ret_val));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Open the codec.
+        av_ret_val = avcodec_open2(av_codec_context, av_codec, nullptr);
+        if (av_ret_val < 0)
+        {
+            this->error("Cannot open the codec: " + AVUtils::avErrorToString(av_ret_val));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Allocate the video frame.
+        AVFrame* av_frame = av_frame_alloc();
+        if (!av_frame)
+        {
+            this->error("Cannot allocate the video frame");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Allocate the RGB frame.
+        AVFrame* av_frame_rgb = av_frame_alloc();
+        if (!av_frame_rgb)
+        {
+            this->error("Cannot allocate the rgb frame");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            av_frame_free(&av_frame);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Determine the required buffer size and allocate the buffer.
+        int num_bytes = avpicture_get_size(AV_PIX_FMT_RGB24, av_codec_context->width, av_codec_context->height);
+        uint8_t* av_buffer = reinterpret_cast<uint8_t*>(av_malloc(num_bytes * sizeof(uint8_t)));
+        if (!av_buffer)
+        {
+            this->error("Cannot allocate the buffer");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Assign the appropriate parts of the buffer to the image planes in av_frame_rgb.
+        // Note that av_frame_rgb is an AVFrame, but AVFrame is a superset of AVPicture.
+        av_ret_val = avpicture_fill(reinterpret_cast<AVPicture*>(av_frame_rgb), av_buffer, AV_PIX_FMT_RGB24, av_codec_context->width, av_codec_context->height);
+        if (av_ret_val < 0)
+        {
+            this->error("Cannot fill RGB frame buffer: " + AVUtils::avErrorToString(av_ret_val));
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
+        // Initialize the SWS context for software scaling.
+        struct SwsContext* sws_context = sws_getContext(av_codec_context->width, av_codec_context->height, av_codec_context->pix_fmt, av_codec_context->width, av_codec_context->height, AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+        if (!sws_context)
+        {
+            this->error("Cannot get SWS context");
+
+            this->setProgress((current_progress += thumbnail_number) / total_progress);
+            this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
+            continue;
+        }
+
         // Get the width, height and duration of the input video file.
-        QString ffprobe_info_command(QString("ffprobe -v error -show_entries stream=width -show_entries stream=height -show_entries stream=display_aspect_ratio -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"%1\"").arg(input_file));
-        this->debug("FFprobe info command: " + ffprobe_info_command);
-        QProcess ffprobe_info_process;
-        ffprobe_info_process.start(ffprobe_info_command);
-        if (!ffprobe_info_process.waitForStarted())
-        {
-            this->error("An error has occurred starting the ffprobe process");
+        int av_input_width = av_codec_context_original->width;
+        int av_input_height = av_codec_context_original->height;
+        this->debug("Input width: " + QString::number(av_input_width) + " pixels");
+        this->debug("Input height: " + QString::number(av_input_height) + " pixels");
 
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
+        int av_input_horizontal_aspect_ratio = av_video_stream->display_aspect_ratio.num;
+        int av_input_vertical_aspect_ratio = av_video_stream->display_aspect_ratio.den;
+        this->debug("Input horizontal aspect ratio: " + QString::number(av_input_horizontal_aspect_ratio));
+        this->debug("Input vertical aspect ratio: " + QString::number(av_input_vertical_aspect_ratio));
+        this->debug("Input display aspect ratio: " + QString::number(av_input_horizontal_aspect_ratio) + ":" + QString::number(av_input_vertical_aspect_ratio));
 
-            continue;
-        }
-        if (!ffprobe_info_process.waitForFinished())
-        {
-            this->error("An error has occurred during the execution of the ffprobe process");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        QString ffprobe_info_output = ffprobe_info_process.readAll().simplified();
-        this->debug("FFprobe info output: " + ffprobe_info_output);
-        QStringList ffprobe_info = ffprobe_info_output.split(' ').filter(QRegExp("^((?!N/A).)*$"));
-        this->debug("FFprobe info: " + ffprobe_info.join(' '));
-        if (ffprobe_info.size() != 4)
-        {
-            this->error("FFprobe did not collect the corrent number of info. Expected 4 elements: width, height, display aspect ratio and duration");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-
-        // Prepare the locale for the conversions.
-        QLocale english_locale(QLocale::English);
-
-        // Convert the input width to a number.
-        bool ret_val = false;
-        int input_width = english_locale.toInt(ffprobe_info.at(0), &ret_val);
-        if (!ret_val)
-        {
-            this->error("Cannot convert the input width to int");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        this->debug("Input width: " + QString::number(input_width) + " pixels");
-
-        // Convert the input height to a number.
-        ret_val = false;
-        int input_height = english_locale.toInt(ffprobe_info.at(1), &ret_val);
-        if (!ret_val)
-        {
-            this->error("Cannot convert the input height to int");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        this->debug("Input height: " + QString::number(input_height) + " pixels");
-
-        // Convert the display aspect ratio to numbers.
-        QStringList input_display_aspect_ratio_split = ffprobe_info.at(2).split(':');
-        if (input_display_aspect_ratio_split.size() != 2)
-        {
-            this->error("Cannot convert the input display ratio to numbers");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        ret_val = false;
-        int input_horizontal_aspect_ratio = english_locale.toInt(input_display_aspect_ratio_split.at(0), &ret_val);
-        if (!ret_val)
-        {
-            this->error("Cannot convert the input horizontal aspect ratio to int");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        if (input_horizontal_aspect_ratio < 0)
-        {
-            this->error("Invalid input horizontal aspect ratio: " + QString::number(input_horizontal_aspect_ratio));
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        this->debug("Input horizontal aspect ratio: " + QString::number(input_horizontal_aspect_ratio));
-        ret_val = false;
-        int input_vertical_aspect_ratio = english_locale.toInt(input_display_aspect_ratio_split.at(1), &ret_val);
-        if (!ret_val)
-        {
-            this->error("Cannot convert the input vertical aspect ratio to int");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        if (input_vertical_aspect_ratio < 0)
-        {
-            this->error("Invalid input vertical aspect ratio: " + QString::number(input_vertical_aspect_ratio));
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        this->debug("Input vertical aspect ratio: " + QString::number(input_vertical_aspect_ratio));
-        this->debug("Input display aspect ratio: " + QString::number(input_horizontal_aspect_ratio) + ":" + QString::number(input_vertical_aspect_ratio));
-
-        // Convert the input duration to a number.
-        ret_val = false;
-        double input_duration = english_locale.toDouble(ffprobe_info.at(3), &ret_val);
-        if (!ret_val)
-        {
-            this->error("Cannot convert the input duration to double");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-        this->debug("Input duration: " + QString::number(input_duration) + " seconds");
+        double av_input_duration = static_cast<double>(av_video_stream->duration) * av_video_stream->time_base.num / av_video_stream->time_base.den;
+        this->debug("Input duration: " + QString::number(av_input_duration) + " seconds");
 
         // Check whether the video format is consistent with its size.
-        cv::Size input_thumbnail_size(input_width, input_height);
-        if (input_horizontal_aspect_ratio > 0
-                && input_vertical_aspect_ratio > 0
-                && input_vertical_aspect_ratio * input_thumbnail_size.width != input_horizontal_aspect_ratio * input_thumbnail_size.height)
+        cv::Size cv_input_thumbnail_size(av_input_width, av_input_height);
+        if (av_input_horizontal_aspect_ratio > 0
+                && av_input_vertical_aspect_ratio > 0
+                && av_input_vertical_aspect_ratio * cv_input_thumbnail_size.width != av_input_horizontal_aspect_ratio * cv_input_thumbnail_size.height)
         {
             // The display aspect ratio does not match the actual resolution of the video, adjust the input height accordingly.
-            input_thumbnail_size.height = static_cast<float>(input_thumbnail_size.width) / input_horizontal_aspect_ratio * input_vertical_aspect_ratio;
+            cv_input_thumbnail_size.height = static_cast<float>(cv_input_thumbnail_size.width) / av_input_horizontal_aspect_ratio * av_input_vertical_aspect_ratio;
 
-            this->debug("Display aspect ratio/video resolution mismatch. Input thumbnail's aspect ratio adjusted: " + QString::number(input_thumbnail_size.width) + "x" + QString::number(input_thumbnail_size.height));
+            this->debug("Display aspect ratio/video resolution mismatch. Input thumbnail's aspect ratio adjusted: " + QString::number(cv_input_thumbnail_size.width) + "x" + QString::number(cv_input_thumbnail_size.height));
         }
 
         // Calculate the interval of the thumbnails.
-        double thumbnail_interval = input_duration / (thumbnail_number + 1);
+        double thumbnail_interval = av_input_duration / (thumbnail_number + 1);
         this->debug("Thumbnails interval: " + QString::number(thumbnail_interval) + " seconds");
 
         // Calculate the offset of the thumbnails.
@@ -891,93 +1037,110 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         }
 
         // Prepare the fallback thumbnail just in case.
-        cv::Mat fallback_thumbnail = cv::Mat::zeros(input_thumbnail_size, CV_8UC3);
-        no_thumbnail.copyTo(fallback_thumbnail(cv::Rect((input_thumbnail_size.width - no_thumbnail.cols) / 2, (input_thumbnail_size.height - no_thumbnail.rows) / 2, no_thumbnail.cols, no_thumbnail.rows)));
+        cv::Mat av_fallback_thumbnail = cv::Mat::zeros(cv_input_thumbnail_size, CV_8UC3);
+        cv_no_thumbnail.copyTo(av_fallback_thumbnail(cv::Rect((cv_input_thumbnail_size.width - cv_no_thumbnail.cols) / 2, (cv_input_thumbnail_size.height - cv_no_thumbnail.rows) / 2, cv_no_thumbnail.cols, cv_no_thumbnail.rows)));
 
         // Check whether the process should be paused, resumed or stopped.
         if (!this->processStateCheckpoint())
         {
+            // Cleanup.
+            sws_freeContext(sws_context);
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
+
             return;
         }
 
         // Generate the thumbnails and compose the multi-screenshot thumbnail.
-        int output_thumbnail_width = m_thumbnailColumns * input_thumbnail_size.width;
-        int output_thumbnail_height = m_thumbnailRows * input_thumbnail_size.height;
-        cv::Size output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
-        this->debug("Output thumbnail size: " + QString::number(output_thumbnail_size.width) + "x" + QString::number(output_thumbnail_size.height));
-        cv::Mat output_thumbnail = cv::Mat::zeros(output_thumbnail_size, CV_8UC3);
+        int output_thumbnail_width = m_thumbnailColumns * cv_input_thumbnail_size.width;
+        int output_thumbnail_height = m_thumbnailRows * cv_input_thumbnail_size.height;
+        cv::Size cv_output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
+        this->debug("Output thumbnail size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
+        cv::Mat cv_output_thumbnail = cv::Mat::zeros(cv_output_thumbnail_size, CV_8UC3);
         this->debug("Generating " + QString::number(thumbnail_offsets.size()) + " thumbnails...");
-        QDir temp_directory(temporary_path);
-        if (!temp_directory.exists())
-        {
-            this->error("Cannot access the contents of the temporary directory");
-
-            this->setProgress((current_progress += thumbnail_number) / total_progress);
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
         int generated_thumbnails = 0;
+        int64_t av_seek_step = av_video_stream->duration / (thumbnail_number + 1);
+        int64_t av_seek_timestamp = av_video_stream->start_time;
         for (int thumbnail_index = 0; thumbnail_index < thumbnail_number; thumbnail_index++)
         {
             // Check whether the process should be paused, resumed or stopped.
             if (!this->processStateCheckpoint())
             {
                 this->setThumbnailUrl(QUrl());
+                this->setThumbnail(QImage());
+
+                // Cleanup.
+                sws_freeContext(sws_context);
+                av_free(av_buffer);
+                av_frame_free(&av_frame);
+                av_frame_free(&av_frame_rgb);
+                avcodec_close(av_codec_context);
+                avcodec_close(av_codec_context_original);
+                avformat_close_input(&av_format_context);
 
                 return;
             }
 
-            // Generate the thumbnail.
-            int current_thumbnail_number = thumbnail_index + 1;
-            double thumbnail_offset = thumbnail_offsets.at(thumbnail_index);
-            QTime offset_time = QTime::fromMSecsSinceStartOfDay(thumbnail_offset * 1000);
-            QString offset_time_string = offset_time.toString("hh_mm_ss");
-            QString thumbnail_path = temp_directory.filePath(QString("thumbnail_%4_%5%6").arg(current_thumbnail_number, 3, 10, QChar('0')).arg(offset_time_string).arg(m_OUTPUT_FILE_EXTENSION));
-            QString ffmpeg_thumbnail_command(QString("ffmpeg -ss %1 -i \"%2\" -vframes 1 -y \"%3\"").arg(thumbnail_offset).arg(input_file).arg(thumbnail_path));
-            QProcess ffmpeg_process;
-            ffmpeg_process.start(ffmpeg_thumbnail_command);
-            if (!ffmpeg_process.waitForStarted())
+            // Flush the codec buffer before every seek.
+            avcodec_flush_buffers(av_codec_context);
+
+            // Update the timestamp to seek to.
+            av_seek_timestamp += av_seek_step;
+            av_ret_val = av_seek_frame(av_format_context, video_stream_index, av_seek_timestamp, AVSEEK_FLAG_FRAME);
+            if (av_ret_val < 0)
             {
-                this->error("An error has occurred starting the ffmpeg process");
+                this->error("Cannot seek to timestamp " + QString::number(av_seek_timestamp) + ": " + AVUtils::avErrorToString(av_ret_val));
 
                 this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
-
-                continue;
-            }
-            if (!ffmpeg_process.waitForFinished())
-            {
-                this->error("An error has occurred during the execution of the ffmpeg process");
-
-                this->setProgress(++current_progress / total_progress);
-                this->setThumbnailUrl(QUrl());
+                this->setThumbnail(QImage());
 
                 continue;
             }
 
-            // Check whether the thumbnail has been generated.
-            QFileInfo thumbnail_file_info(thumbnail_path);
-            bool thumbnail_generated = thumbnail_file_info.exists();
-            if (thumbnail_generated)
+            // Decode the next frame on the video stream.
+            if (AVUtils::decodeFrame(av_format_context, video_stream_index, av_codec_context, av_frame) < 0)
             {
-                generated_thumbnails++;
+                this->error("Cannot decode a frame");
 
-                this->debug("Thumbnail " + QString::number(current_thumbnail_number) + " generated: offset: " + QString::number(thumbnail_offset) + " seconds");
-                this->setThumbnailUrl(QUrl::fromLocalFile(thumbnail_path));
-            }
-            else
-            {
-                this->warning("The thumbnail number " + QString::number(current_thumbnail_number) + " has not been generated");
-
-                this->setWarnings(m_warnings + 1);
+                this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
+                this->setThumbnail(QImage());
+
+                continue;
             }
+
+            // Convert the AV frame to an OpenCV Mat.
+            cv::Mat cv_current_thumbnail;
+            if (AVUtils::convertAvFrameToCvMat(sws_context, av_codec_context, av_frame, av_frame_rgb, cv_current_thumbnail) < 0)
+            {
+                this->error("Cannot convert the frame to a CV image");
+
+                this->setProgress(++current_progress / total_progress);
+                this->setThumbnailUrl(QUrl());
+                this->setThumbnail(QImage());
+
+                continue;
+            }
+
+            // Thumbnail generated.
+            generated_thumbnails++;
+            /*QImage current_thumbnail_image(cv_current_thumbnail.data,
+                                           cv_current_thumbnail.cols,
+                                           cv_current_thumbnail.rows,
+                                           static_cast<int>(cv_current_thumbnail.step),
+                                           QImage::Format_RGB888);
+            this->setThumbnail(current_thumbnail_image);*/
 
             // Check whether the process should be paused, resumed or stopped.
             if (!this->processStateCheckpoint())
             {
                 this->setThumbnailUrl(QUrl());
+                this->setThumbnail(QImage());
 
                 return;
             }
@@ -985,10 +1148,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             // Add the thumbnail to the the multi-screenshot thumbnail.
             int row = thumbnail_index / m_thumbnailColumns;
             int column = thumbnail_index % m_thumbnailColumns;
-            cv::Mat current_thumbnail = thumbnail_generated ? cv::imread(thumbnail_path.toStdString(), CV_LOAD_IMAGE_ANYCOLOR) : fallback_thumbnail;
-            cv::Mat current_thumbnail_final;
-            cv::resize(current_thumbnail, current_thumbnail_final, input_thumbnail_size);
-            current_thumbnail_final.copyTo(output_thumbnail(cv::Rect(column * input_thumbnail_size.width, row * input_thumbnail_size.height, input_thumbnail_size.width, input_thumbnail_size.height)));
+            cv::Mat cv_current_thumbnail_final;
+            cv::resize(cv_current_thumbnail, cv_current_thumbnail_final, cv_input_thumbnail_size);
+            cv_current_thumbnail_final.copyTo(cv_output_thumbnail(cv::Rect(column * cv_input_thumbnail_size.width, row * cv_input_thumbnail_size.height, cv_input_thumbnail_size.width, cv_input_thumbnail_size.height)));
 
             this->setProgress(++current_progress / total_progress);
         }
@@ -998,6 +1160,16 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setErrors(m_errors + 1);
             this->setThumbnailUrl(QUrl());
+            this->setThumbnail(QImage());
+
+            // Cleanup.
+            sws_freeContext(sws_context);
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -1008,87 +1180,78 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setWarnings(m_warnings + 1);
         }
         this->setThumbnailUrl(QUrl());
+        this->setThumbnail(QImage());
         this->debug("Thumbnails generated");
 
         // Resize the output thumbnail if necessary.
-        cv::Size output_thumbnail_final_size(output_thumbnail_width, output_thumbnail_height);
+        cv::Size cv_output_thumbnail_final_size(output_thumbnail_width, output_thumbnail_height);
         if (output_thumbnail_width > m_thumbnailMaxWidth
                 || output_thumbnail_height > m_thumbnailMaxHeight)
         {
             float scale = qMin(static_cast<float>(m_thumbnailMaxWidth) / output_thumbnail_width, static_cast<float>(m_thumbnailMaxHeight) / output_thumbnail_height);
             this->debug("Scale: " + QString::number(scale));
-            output_thumbnail_final_size.width = qMin(m_thumbnailMaxWidth, qCeil(output_thumbnail_width * scale));
-            output_thumbnail_final_size.height = qMin(m_thumbnailMaxHeight, qCeil(output_thumbnail_height * scale));
+            cv_output_thumbnail_final_size.width = qMin(m_thumbnailMaxWidth, qCeil(output_thumbnail_width * scale));
+            cv_output_thumbnail_final_size.height = qMin(m_thumbnailMaxHeight, qCeil(output_thumbnail_height * scale));
         }
-        this->debug("Output thumbnail final size: " + QString::number(output_thumbnail_final_size.width) + "x" + QString::number(output_thumbnail_final_size.height));
-        if (output_thumbnail_final_size.width <= 0
-                || output_thumbnail_final_size.height <= 0)
+        this->debug("Output thumbnail final size: " + QString::number(cv_output_thumbnail_final_size.width) + "x" + QString::number(cv_output_thumbnail_final_size.height));
+        if (cv_output_thumbnail_final_size.width <= 0
+                || cv_output_thumbnail_final_size.height <= 0)
         {
-            this->error("Invalid output thumbnail size: " + QString::number(output_thumbnail_final_size.width) + "x" + QString::number(output_thumbnail_final_size.height));
+            this->error("Invalid output thumbnail size: " + QString::number(cv_output_thumbnail_final_size.width) + "x" + QString::number(cv_output_thumbnail_final_size.height));
 
             this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            sws_freeContext(sws_context);
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
 
             continue;
         }
 
         // Resize the output thumbnail.
-        cv::Mat output_thumbnail_final;
-        cv::resize(output_thumbnail, output_thumbnail_final, output_thumbnail_final_size);
-
-        // Prepare the text to put on the output thumbnail.
-        std::string text = input_file_info.fileName().toStdString();
-        size_t text_length = text.length();
-        int text_left_margin = 10;
-        int text_bottom_margin = 10;
-        int text_font_face = cv::FONT_HERSHEY_SIMPLEX;
-        double text_font_scale = 1;
-        int text_thickness = 2;
-        int output_thumbnail_final_usable_width = output_thumbnail_final_size.width - text_left_margin;
-        while (text_length > 0)
-        {
-            int text_baseline = 0;
-            cv::Size text_size = cv::getTextSize(text, text_font_face, text_font_scale, text_thickness, &text_baseline);
-            if (text_size.width < output_thumbnail_final_usable_width)
-            {
-                // The text fits, add ellipsis if necessary.
-                if (text_length > 3)
-                {
-                    // Turn the last 3 characters into ellipsis.
-                    text.replace(text_length - 3, 3, 3, '.');
-                }
-
-                break;
-            }
-            text.pop_back();
-            text_length = text.length();
-        }
-        if (text_length > 0)
-        {
-            // Put the filename on the output thumbnail.
-            cv::Point text_org(text_left_margin, output_thumbnail_final.rows - text_bottom_margin);
-            cv::putText(output_thumbnail_final, text, text_org, text_font_face, text_font_scale, cv::Scalar::all(255), text_thickness, cv::LINE_8, false);
-            this->debug("Filename added to output thumbnail");
-        }
-        else
-        {
-            this->warning("Cannot add filename to output thumbnail");
-        }
+        cv::Mat cv_output_thumbnail_final;
+        cv::resize(cv_output_thumbnail, cv_output_thumbnail_final, cv_output_thumbnail_final_size);
 
         // Convert the output thumbnail to QImage.
-        QImage output_thumbnail_image(output_thumbnail_final.data,
-                                      output_thumbnail_final.cols,
-                                      output_thumbnail_final.rows,
-                                      static_cast<int>(output_thumbnail_final.step),
+        QImage output_thumbnail_image(cv_output_thumbnail_final.data,
+                                      cv_output_thumbnail_final.cols,
+                                      cv_output_thumbnail_final.rows,
+                                      static_cast<int>(cv_output_thumbnail_final.step),
                                       QImage::Format_RGB888);
-        output_thumbnail_final.deallocate(); // Release the memory for good measure.
+        cv_output_thumbnail_final.deallocate(); // Release the memory for good measure.
+
+        // Write the filename on the output thumbnail.
+        QString text = input_file_info.fileName();
+        int text_left_margin = 10;
+        int text_bottom_margin = 10;
+        QPainter painter(&output_thumbnail_image);
+        QFont font = painter.font();
+        font.setPixelSize(48);
+        painter.setFont(font);
+        painter.setPen(QPen(Qt::white));
+        painter.drawText(text_left_margin, output_thumbnail_image.height() - text_bottom_margin, text);
 
         // Write the output thumbnail (mind the RBG swap).
-        ret_val = output_thumbnail_image.rgbSwapped().save(output_file);
+        bool ret_val = output_thumbnail_image.rgbSwapped().save(output_file);
         if (!ret_val)
         {
             this->error("Cannot write output thumbnail: " + output_file);
 
             this->setErrors(m_errors + 1);
+
+            // Cleanup.
+            sws_freeContext(sws_context);
+            av_free(av_buffer);
+            av_frame_free(&av_frame);
+            av_frame_free(&av_frame_rgb);
+            avcodec_close(av_codec_context);
+            avcodec_close(av_codec_context_original);
+            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -1099,6 +1262,15 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setOverwritten(m_overwritten + 1);
         }
         this->setProcessed(m_processed + 1);
+
+        // Cleanup.
+        sws_freeContext(sws_context);
+        av_free(av_buffer);
+        av_frame_free(&av_frame);
+        av_frame_free(&av_frame_rgb);
+        avcodec_close(av_codec_context);
+        avcodec_close(av_codec_context_original);
+        avformat_close_input(&av_format_context);
     }
     this->setProgress(1);
     this->setState(Enums::Completed);

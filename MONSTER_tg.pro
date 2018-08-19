@@ -2,7 +2,7 @@ TARGET = MONSTER_tg
 
 TEMPLATE = app
 
-VERSION = 3.2.3
+VERSION = 4.0.0
 
 QT += \
     qml \
@@ -35,17 +35,24 @@ RCC_DIR = $${DESTDIR}/.rcc
 
 win32 {
     INCLUDEPATH += \
-        "Z:/OpenCV/current/build/include"
+        $$PWD/include \
+        Z:/OpenCV/current/build/include
 }
 unix {
     INCLUDEPATH += \
-        "/opt/opencv/current/include"
+        /opt/opencv/current/include
 }
 
 win32 {
+    LIBS += \
+        -L$$PWD/lib \
+        -lavcodec \
+        -lavformat \
+        -lavutil \
+        -lswscale
     CONFIG(debug, debug|release) {
         LIBS += \
-            -L"Z:/OpenCV/current/build/x64/vc14/lib/Debug" \
+            -LZ:/OpenCV/current/build/x64/vc14/lib/Debug \
             -lopencv_core310d \
             -lopencv_highgui310d \
             -lopencv_imgproc310d \
@@ -53,7 +60,7 @@ win32 {
     }
     CONFIG(release, debug|release) {
         LIBS += \
-            -L"Z:/OpenCV/current/build/x64/vc14/lib/Release" \
+            -LZ:/OpenCV/current/build/x64/vc14/lib/Release \
             -lopencv_core310 \
             -lopencv_highgui310 \
             -lopencv_imgproc310 \
@@ -62,7 +69,7 @@ win32 {
 }
 unix {
     LIBS += \
-        -L"/opencv/current/build/lib" \
+        -L/opencv/current/build/lib \
         -lopencv_core \
         -lopencv_highgui \
         -lopencv_imgproc \
@@ -72,10 +79,12 @@ unix {
 HEADERS += \
     applicationmanager.h \
     applicationutils.h \
+    avutils.h \
     base.h \
     destinationmanager.h \
     enums.h \
     filemanager.h \
+    imageprovider.h \
     logmanager.h \
     settingsmanager.h \
     sourcemanager.h \
@@ -87,9 +96,11 @@ HEADERS += \
 SOURCES += \
     applicationmanager.cpp \
     applicationutils.cpp \
+    avutils.cpp \
     base.cpp \
     destinationmanager.cpp \
     filemanager.cpp \
+    imageprovider.cpp \
     logmanager.cpp \
     main.cpp \
     settingsmanager.cpp \
@@ -108,8 +119,11 @@ win32 {
 
 win32 {
     OTHER_FILES += \
-        "$$PWD/ffmpeg/bin/ffmpeg.exe" \
-        "$$PWD/ffmpeg/bin/ffprobe.exe" \
+        $$PWD/bin/avcodec-58.dll \
+        $$PWD/bin/avformat-58.dll \
+        $$PWD/bin/avutil-56.dll \
+        $$PWD/bin/swresample-3.dll \
+        $$PWD/bin/swscale-5.dll \
         $(QTDIR)/bin/d3dcompiler_47.dll
     lessThan(QT_MINOR_VERSION, 7) {
         OTHER_FILES += \
@@ -127,11 +141,11 @@ win32 {
             $(QTDIR)/bin/Qt5Qmld.dll \
             $(QTDIR)/bin/Qt5Quickd.dll \
             $(QTDIR)/bin/Qt5Widgetsd.dll \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_core310d.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_highgui310d.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgcodecs310d.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgproc310d.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_videoio310d.dll"
+            Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_core310d.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_highgui310d.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgcodecs310d.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_imgproc310d.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Debug/opencv_videoio310d.dll
     }
     CONFIG(release, debug|release) {
         OTHER_FILES += \
@@ -143,11 +157,11 @@ win32 {
             $(QTDIR)/bin/Qt5Qml.dll \
             $(QTDIR)/bin/Qt5Quick.dll \
             $(QTDIR)/bin/Qt5Widgets.dll \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_core310.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_highgui310.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgcodecs310.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgproc310.dll" \
-            "Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_videoio310.dll"
+            Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_core310.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_highgui310.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgcodecs310.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_imgproc310.dll \
+            Z:/OpenCV/current/build/x64/vc14/bin/Release/opencv_videoio310.dll
     }
 }
 

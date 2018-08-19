@@ -34,6 +34,7 @@ private:
     int m_processed;
     QString m_currentInputFile;
     QUrl m_thumbnailUrl;
+    QImage m_thumbnail;
     QMutex *m_mutex;
     QWaitCondition *m_waitCondition;
 
@@ -61,6 +62,7 @@ public:
     int processed() const;
     QString currentInputFile() const;
     QUrl thumbnailUrl() const;
+    QImage thumbnail() const;
 
 private:
     void setIsEnabled(bool isEnabled);
@@ -80,6 +82,7 @@ private:
     void setProcessed(int processed);
     void setCurrentInputFile(const QString &currentInputFile);
     void setThumbnailUrl(const QUrl &thumbnailUrl);
+    void setThumbnail(const QImage &thumbnail);
     bool checkIfEnabled();
     bool processStateCheckpoint();
 
@@ -120,6 +123,7 @@ signals:
     void processedChanged(int processed);
     void currentInputFileChanged(const QString &currentInputFile);
     void thumbnailUrlChanged(const QUrl &thumbnailUrl);
+    void thumbnailChanged(const QImage &thumbnail);
     void isSourcePathUrlValid(bool *isSourcePathUrlValid);
     void isDestinationPathUrlValid(bool *isDestinationPathUrlValid);
     void sourcePath(QString *sourcePath);

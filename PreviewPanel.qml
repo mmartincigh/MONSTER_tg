@@ -55,15 +55,20 @@ Item {
 
             anchors.centerIn: parent
 
+            source: "image://imageProvider/no_thumbnail"
             sourceSize.width: 400
             sourceSize.height: 400
             fillMode: Image.PreserveAspectFit
             cache: false
             opacity: 0
 
+            onSourceChanged: {
+                console.log("=== onSourceChanged: " + source)
+            }
+
             Connections {
                 target: thumbnailGenerator
-                onThumbnailUrlChanged: {
+                /*onThumbnailUrlChanged: {
                     if (!showPreviewCheckBox.checked) {
                         previewImage.source = "";
                         return;
@@ -76,7 +81,11 @@ Item {
                         imageFadeOutAnimation.complete();
                         imageFadeInAnimation.start();
                     }
-                }
+                }*/
+                /*onThumbnailChanged: {
+                    console.log("=== onThumbnailChanged")
+                    previewImage.source = "";
+                }*/
             }
         }
     }

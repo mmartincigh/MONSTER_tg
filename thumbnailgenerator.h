@@ -26,6 +26,7 @@ class ThumbnailGenerator : public Base
     Q_PROPERTY(int processed READ processed NOTIFY processedChanged)
     Q_PROPERTY(QString currentInputFile READ currentInputFile NOTIFY currentInputFileChanged)
     Q_PROPERTY(QUrl thumbnailUrl READ thumbnailUrl NOTIFY thumbnailUrlChanged)
+    Q_PROPERTY(QImage thumbnail READ thumbnail NOTIFY thumbnailChanged)
 
 private:
     QMutex m_thumbnailGeneratorMutex;
@@ -56,6 +57,7 @@ public:
     int processed() const;
     QString currentInputFile() const;
     QUrl thumbnailUrl() const;
+    QImage thumbnail() const;
 
 public slots:
     void onUpdateThumbnailRows(int thumbnailRows);
@@ -90,6 +92,7 @@ signals:
     void processedChanged(int processed);
     void currentInputFileChanged(const QString &currentInputFile);
     void thumbnailUrlChanged(const QUrl &thumbnailUrl);
+    void thumbnailChanged(const QImage &thumbnail);
     void isSourcePathUrlValid(bool *isSourcePathUrlValid);
     void isDestinationPathUrlValid(bool *isDestinationPathUrlValid);
     void sourcePath(QString *sourcePath);

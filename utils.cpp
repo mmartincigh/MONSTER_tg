@@ -1,5 +1,10 @@
 #include "utils.h"
 
+extern "C"
+{
+#include <libavutil/error.h>
+}
+
 const QUrl::FormattingOptions Utils::m_URL_CONVERSION_FLAGS(QUrl::PrettyDecoded | QUrl::PreferLocalFile);
 const QRegExp Utils::m_FILE_SCHEME_REG_EXP("^file://");
 #if defined(Q_OS_WIN)

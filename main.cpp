@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     context->setContextProperty("thumbnailGenerator", application_manager.thumbnailGenerator());
     context->setContextProperty("fileManager", application_manager.fileManager());
     context->setContextProperty("windowManager", application_manager.windowManager());
+    engine.addImageProvider("imageProvider", application_manager.imageProvider());
     component.loadUrl(QUrl("qrc:/qml/main.qml"));
     if (!component.isReady())
     {
