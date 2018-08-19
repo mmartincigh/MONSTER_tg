@@ -1159,7 +1159,10 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             int column = thumbnail_index % m_thumbnailColumns;
             cv::Mat cv_current_thumbnail_final;
             cv::resize(cv_current_thumbnail, cv_current_thumbnail_final, cv_input_thumbnail_size);
-            cv_current_thumbnail_final.copyTo(cv_output_thumbnail(cv::Rect(column * cv_input_thumbnail_size.width, row * cv_input_thumbnail_size.height, cv_input_thumbnail_size.width, cv_input_thumbnail_size.height)));
+            cv_current_thumbnail_final.copyTo(cv_output_thumbnail(cv::Rect(column * cv_input_thumbnail_size.width,
+                                                                           row * cv_input_thumbnail_size.height,
+                                                                           cv_input_thumbnail_size.width,
+                                                                           cv_input_thumbnail_size.height)));
 
             this->setProgress(++current_progress / total_progress);
         }
@@ -1232,7 +1235,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                                       cv_output_thumbnail_final.rows,
                                       static_cast<int>(cv_output_thumbnail_final.step),
                                       QImage::Format_RGB888);
-        cv_output_thumbnail_final.deallocate(); // Release the memory for good measure.
 
         // Write the filename on the output thumbnail.
         QString text = input_file_info.fileName();
