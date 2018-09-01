@@ -1034,21 +1034,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->debug("Display aspect ratio/video resolution mismatch. Input thumbnail's aspect ratio adjusted: " + QString::number(cv_input_thumbnail_size.width) + "x" + QString::number(cv_input_thumbnail_size.height));
         }
 
-        // Calculate the interval of the thumbnails.
-        double thumbnail_interval = av_input_duration / (thumbnail_number + 1);
-        this->debug("Thumbnails interval: " + QString::number(thumbnail_interval) + " seconds");
-
-        // Calculate the offset of the thumbnails.
-        QVector<double> thumbnail_offsets(thumbnail_number);
-        for (int j = 0; j < thumbnail_number; j++)
-        {
-            thumbnail_offsets[j] = (j + 1) * thumbnail_interval;
-        }
-
-        // Prepare the fallback thumbnail just in case.
-        cv::Mat av_fallback_thumbnail = cv::Mat::zeros(cv_input_thumbnail_size, CV_8UC3);
-        cv_no_thumbnail.copyTo(av_fallback_thumbnail(cv::Rect((cv_input_thumbnail_size.width - cv_no_thumbnail.cols) / 2, (cv_input_thumbnail_size.height - cv_no_thumbnail.rows) / 2, cv_no_thumbnail.cols, cv_no_thumbnail.rows)));
-
         // Check whether the process should be paused, resumed or stopped.
         if (!this->processStateCheckpoint())
         {
@@ -1064,16 +1049,47 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             return;
         }
 
+        // Prepare the fallback thumbnail just in case.
+        cv::Mat cv_fallback_thumbnail = cv::Mat::zeros(cv_input_thumbnail_size, CV_8UC3);
+        int cv_no_thumbnail_scaling_factor = cv_input_thumbnail_size.height / 2 / cv_no_thumbnail.rows;
+        cv::Mat cv_no_thumbnail_resized;
+        cv::resize(cv_no_thumbnail,
+                   cv_no_thumbnail_resized,
+                   cv::Size(),
+                   cv_no_thumbnail_scaling_factor,
+                   cv_no_thumbnail_scaling_factor,
+                   cv::INTER_CUBIC);
+        cv_no_thumbnail_resized.copyTo(cv_fallback_thumbnail(cv::Rect((cv_input_thumbnail_size.width - cv_no_thumbnail_resized.cols) / 2,
+                                                                      (cv_input_thumbnail_size.height - cv_no_thumbnail_resized.rows) / 2,
+                                                                      cv_no_thumbnail_resized.cols,
+                                                                      cv_no_thumbnail_resized.rows)));
+
         // Generate the thumbnails and compose the multi-screenshot thumbnail.
         int output_thumbnail_width = m_thumbnailColumns * cv_input_thumbnail_size.width;
         int output_thumbnail_height = m_thumbnailRows * cv_input_thumbnail_size.height;
         cv::Size cv_output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
         this->debug("Output thumbnail size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
         cv::Mat cv_output_thumbnail = cv::Mat::zeros(cv_output_thumbnail_size, CV_8UC3);
-        this->debug("Generating " + QString::number(thumbnail_offsets.size()) + " thumbnails...");
+
+        // Compose the multi-screenshot thumbnail with the fallback thumbnail.
+        for (int c = 0; c < m_thumbnailColumns; c++)
+        {
+            for (int r = 0; r < m_thumbnailRows; r++)
+            {
+                cv_fallback_thumbnail.copyTo(cv_output_thumbnail(cv::Rect(c * cv_input_thumbnail_size.width,
+                                                                          r * cv_input_thumbnail_size.height,
+                                                                          cv_input_thumbnail_size.width,
+                                                                          cv_input_thumbnail_size.height)));
+            }
+        }
+
+        // Calculate the interval of the thumbnails.
+        double thumbnail_interval = av_input_duration / (thumbnail_number + 1);
+        this->debug("Thumbnails interval: " + QString::number(thumbnail_interval) + " seconds");
         int generated_thumbnails = 0;
         int64_t av_seek_step = av_video_stream->duration / (thumbnail_number + 1);
         int64_t av_seek_timestamp = av_video_stream->start_time;
+        this->debug("Generating " + QString::number(thumbnail_number) + " thumbnails...");
         for (int thumbnail_index = 0; thumbnail_index < thumbnail_number; thumbnail_index++)
         {
             // Check whether the process should be paused, resumed or stopped.
@@ -1099,7 +1115,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             // Seek to next timestamp.
             av_seek_timestamp += av_seek_step;
-            qDebug() << "=== av_seek_timestamp:" << av_seek_timestamp;
             av_ret_val = av_seek_frame(av_format_context, video_stream_index, av_seek_timestamp, AVSEEK_FLAG_FRAME);
             if (av_ret_val < 0)
             {
@@ -1166,7 +1181,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                 return;
             }
 
-            // Add the thumbnail to the the multi-screenshot thumbnail.
+            // Add the thumbnail to the multi-screenshot thumbnail.
             int row = thumbnail_index / m_thumbnailColumns;
             int column = thumbnail_index % m_thumbnailColumns;
             cv::Mat cv_current_thumbnail_final;
