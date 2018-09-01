@@ -5,11 +5,67 @@
 
 extern "C"
 {
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
 }
 
 #include <opencv2/imgproc/imgproc.hpp>
+
+struct AVFormatContextDeleter
+{
+    void operator()(AVFormatContext* avfc)
+    {
+        if (avfc)
+        {
+            avformat_close_input(&avfc);
+        }
+    }
+};
+
+struct AVCodecContextDeleter
+{
+    void operator()(AVCodecContext* avcc)
+    {
+        if (avcc)
+        {
+            avcodec_close(avcc);
+        }
+    }
+};
+
+struct AVFrameDeleter
+{
+    void operator()(AVFrame* avf)
+    {
+        if (avf)
+        {
+            av_frame_free(&avf);
+        }
+    }
+};
+
+struct AVDeleter
+{
+    void operator()(void* avp)
+    {
+        if (avp)
+        {
+            av_free(avp);
+        }
+    }
+};
+
+struct SwsContextDeleter
+{
+    void operator()(struct SwsContext* swsc)
+    {
+        if (swsc)
+        {
+            sws_freeContext(swsc);
+        }
+    }
+};
 
 class AVUtils
 {

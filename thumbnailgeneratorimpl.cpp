@@ -4,6 +4,8 @@
 #define MAX_PATH 260
 #endif
 
+#include <memory>
+
 #include <QDir>
 #include <QTemporaryDir>
 #include <QThread>
@@ -15,8 +17,8 @@
 
 extern "C"
 {
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 }
 
@@ -769,6 +771,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             continue;
         }
+        std::unique_ptr<AVFormatContext, AVFormatContextDeleter> av_format_context_ptr(av_format_context);
 
         // Retrieve the stream information.
         av_ret_val = avformat_find_stream_info(av_format_context, nullptr);
@@ -778,9 +781,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -802,9 +802,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            avformat_close_input(&av_format_context);
-
             continue;
         }
 
@@ -816,9 +813,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -832,11 +826,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<AVCodecContext, AVCodecContextDeleter> av_codec_context_original_ptr(av_codec_context_original);
 
         // Find the decoder for the video stream.
         AVCodec* av_codec = avcodec_find_decoder(av_codec_context_original->codec_id);
@@ -846,10 +838,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -863,12 +851,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<AVCodecContext, AVCodecContextDeleter> av_codec_context_ptr(av_codec_context);
         av_ret_val = avcodec_copy_context(av_codec_context, av_codec_context_original);
         if (av_ret_val < 0)
         {
@@ -876,11 +861,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -894,11 +874,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
 
@@ -911,13 +886,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<AVFrame, AVFrameDeleter> av_frame_ptr(av_frame);
 
         // Allocate the RGB frame.
         AVFrame* av_frame_rgb = av_frame_alloc();
@@ -928,14 +899,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            av_frame_free(&av_frame);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<AVFrame, AVFrameDeleter> av_frame_rgb_ptr(av_frame_rgb);
 
         // Determine the required buffer size and allocate the buffer.
         int num_bytes = avpicture_get_size(AV_PIX_FMT_RGB24, av_codec_context->width, av_codec_context->height);
@@ -947,15 +913,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<uint8_t, AVDeleter> av_buffer_ptr(av_buffer);
 
         // Assign the appropriate parts of the buffer to the image planes in av_frame_rgb.
         // Note that av_frame_rgb is an AVFrame, but AVFrame is a superset of AVPicture.
@@ -966,14 +926,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -996,16 +948,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
+        std::unique_ptr<SwsContext, SwsContextDeleter> sws_context_ptr(sws_context);
 
         // Get the width, height and duration of the input video file.
         int av_input_width = av_codec_context_original->width;
@@ -1037,15 +982,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         // Check whether the process should be paused, resumed or stopped.
         if (!this->processStateCheckpoint())
         {
-            // Cleanup.
-            sws_freeContext(sws_context);
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             return;
         }
 
@@ -1097,15 +1033,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             {
                 this->setThumbnailUrl(QUrl());
                 this->setThumbnail(QImage());
-
-                // Cleanup.
-                sws_freeContext(sws_context);
-                av_free(av_buffer);
-                av_frame_free(&av_frame);
-                av_frame_free(&av_frame_rgb);
-                avcodec_close(av_codec_context);
-                avcodec_close(av_codec_context_original);
-                avformat_close_input(&av_format_context);
 
                 return;
             }
@@ -1169,15 +1096,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                 this->setThumbnailUrl(QUrl());
                 this->setThumbnail(QImage());
 
-                // Cleanup.
-                sws_freeContext(sws_context);
-                av_free(av_buffer);
-                av_frame_free(&av_frame);
-                av_frame_free(&av_frame_rgb);
-                avcodec_close(av_codec_context);
-                avcodec_close(av_codec_context_original);
-                avformat_close_input(&av_format_context);
-
                 return;
             }
 
@@ -1200,15 +1118,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setErrors(m_errors + 1);
             this->setThumbnailUrl(QUrl());
             this->setThumbnail(QImage());
-
-            // Cleanup.
-            sws_freeContext(sws_context);
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -1239,15 +1148,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->error("Invalid output thumbnail size: " + QString::number(cv_output_thumbnail_final_size.width) + "x" + QString::number(cv_output_thumbnail_final_size.height));
 
             this->setErrors(m_errors + 1);
-
-            // Cleanup.
-            sws_freeContext(sws_context);
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
 
             continue;
         }
@@ -1282,15 +1182,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setErrors(m_errors + 1);
 
-            // Cleanup.
-            sws_freeContext(sws_context);
-            av_free(av_buffer);
-            av_frame_free(&av_frame);
-            av_frame_free(&av_frame_rgb);
-            avcodec_close(av_codec_context);
-            avcodec_close(av_codec_context_original);
-            avformat_close_input(&av_format_context);
-
             continue;
         }
         this->debug("Output thumbnail written: " + output_file);
@@ -1300,15 +1191,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setOverwritten(m_overwritten + 1);
         }
         this->setProcessed(m_processed + 1);
-
-        // Cleanup.
-        sws_freeContext(sws_context);
-        av_free(av_buffer);
-        av_frame_free(&av_frame);
-        av_frame_free(&av_frame_rgb);
-        avcodec_close(av_codec_context);
-        avcodec_close(av_codec_context_original);
-        avformat_close_input(&av_format_context);
     }
     this->setProgress(1);
     this->setState(Enums::Completed);
