@@ -298,7 +298,7 @@ void ThumbnailGeneratorImpl::setState(Enums::State state)
 
     m_state = state;
 
-    this->debug("State is changed: " + QString::number(m_state));
+    this->debug("State changed: " + QString::number(m_state));
 
     emit this->stateChanged(m_state);
 }
@@ -753,7 +753,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         int av_ret_val = avformat_open_input(&av_format_context, input_file.toStdString().c_str(), nullptr, nullptr);
         if (av_ret_val < 0)
         {
-            this->error("Cannot open file \"" + input_file + "\" " + AVUtils::avErrorToString(av_ret_val));
+            this->error("Cannot open file \"" + input_file + "\" " + AVUtils::avErrorToQString(av_ret_val));
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -774,7 +774,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         av_ret_val = avformat_find_stream_info(av_format_context, nullptr);
         if (av_ret_val < 0)
         {
-            this->error("Cannot find the stream information: " + AVUtils::avErrorToString((av_ret_val)));
+            this->error("Cannot find the stream information: " + AVUtils::avErrorToQString((av_ret_val)));
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -872,7 +872,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         av_ret_val = avcodec_copy_context(av_codec_context, av_codec_context_original);
         if (av_ret_val < 0)
         {
-            this->error("Cannot copy the codec context: " + AVUtils::avErrorToString(av_ret_val));
+            this->error("Cannot copy the codec context: " + AVUtils::avErrorToQString(av_ret_val));
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -889,7 +889,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         av_ret_val = avcodec_open2(av_codec_context, av_codec, nullptr);
         if (av_ret_val < 0)
         {
-            this->error("Cannot open the codec: " + AVUtils::avErrorToString(av_ret_val));
+            this->error("Cannot open the codec: " + AVUtils::avErrorToQString(av_ret_val));
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -962,7 +962,7 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         av_ret_val = avpicture_fill(reinterpret_cast<AVPicture*>(av_frame_rgb), av_buffer, AV_PIX_FMT_RGB24, av_codec_context->width, av_codec_context->height);
         if (av_ret_val < 0)
         {
-            this->error("Cannot fill RGB frame buffer: " + AVUtils::avErrorToString(av_ret_val));
+            this->error("Cannot fill RGB frame buffer: " + AVUtils::avErrorToQString(av_ret_val));
 
             this->setProgress((current_progress += thumbnail_number) / total_progress);
             this->setErrors(m_errors + 1);
@@ -1097,12 +1097,13 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             // Flush the codec buffer before every seek.
             avcodec_flush_buffers(av_codec_context);
 
-            // Update the timestamp to seek to.
+            // Seek to next timestamp.
             av_seek_timestamp += av_seek_step;
+            qDebug() << "=== av_seek_timestamp:" << av_seek_timestamp;
             av_ret_val = av_seek_frame(av_format_context, video_stream_index, av_seek_timestamp, AVSEEK_FLAG_FRAME);
             if (av_ret_val < 0)
             {
-                this->error("Cannot seek to timestamp " + QString::number(av_seek_timestamp) + ": " + AVUtils::avErrorToString(av_ret_val));
+                this->error("Cannot seek to timestamp " + QString::number(av_seek_timestamp) + ": " + AVUtils::avErrorToQString(av_ret_val));
 
                 this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
@@ -1138,6 +1139,8 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             // Thumbnail generated.
             generated_thumbnails++;
+
+            // Set the thumbnail image in the GUI.
             /*QImage current_thumbnail_image(cv_current_thumbnail.data,
                                            cv_current_thumbnail.cols,
                                            cv_current_thumbnail.rows,
@@ -1150,6 +1153,15 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             {
                 this->setThumbnailUrl(QUrl());
                 this->setThumbnail(QImage());
+
+                // Cleanup.
+                sws_freeContext(sws_context);
+                av_free(av_buffer);
+                av_frame_free(&av_frame);
+                av_frame_free(&av_frame_rgb);
+                avcodec_close(av_codec_context);
+                avcodec_close(av_codec_context_original);
+                avformat_close_input(&av_format_context);
 
                 return;
             }

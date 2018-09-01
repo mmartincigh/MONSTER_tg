@@ -13,7 +13,7 @@ QMutex LogManager::m_mutex;
 
 LogManager::LogManager(const QString &logTag, QObject *parent) :
     QObject(parent),
-    m_logTag(logTag)
+    m_logTag(logTag.leftJustified(4, ' '))
 {
 }
 
@@ -60,7 +60,7 @@ void LogManager::messageHandler(QtMsgType messageType, const QMessageLogContext 
     log_file.close();
 
     // Log to the output file.
-    FILE *output_file = NULL;
+    FILE *output_file = nullptr;
     output_file = messageType == QtDebugMsg ? stdout : stderr;
     fprintf(output_file, "%s\n", message.toStdString().c_str());
 }
@@ -71,7 +71,7 @@ void LogManager::debug(const QString &debugMessage)
 
     emit this->debugMessage(debugMessage);
 
-    qDebug().nospace() << qPrintable(m_logTag.leftJustified(4, ' ')) << "> " << qPrintable(debugMessage);
+    qDebug().nospace() << qPrintable(m_logTag) << "> " << qPrintable(debugMessage);
 }
 
 void LogManager::warning(const QString &warningMessage)

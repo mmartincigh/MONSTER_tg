@@ -17,7 +17,7 @@ int AVUtils::decodeFrame(AVFormatContext* avFormatContext, int videoStreamIndex,
             || !avCodecContext
             || !outAvFrame)
     {
-        cerr << "decodeFrame: Invalid argument(s)" << endl;
+        qCritical().nospace() << "AVU > ERROR: decodeFrame: Invalid argument(s)";
 
         return -1;
     }
@@ -25,10 +25,11 @@ int AVUtils::decodeFrame(AVFormatContext* avFormatContext, int videoStreamIndex,
     // Keep reading packets until we get a complete frame.
     AVPacket av_packet;
     int frame_finished = 0;
+    int ret_val = 0;
     while (av_read_frame(avFormatContext, &av_packet) >= 0
            && !frame_finished)
     {
-        // Check that it's a packet from the video stream.
+        // Check that the packet is from the video stream.
         if (av_packet.stream_index != videoStreamIndex)
         {
             // The packet is from another stream.
@@ -39,16 +40,22 @@ int AVUtils::decodeFrame(AVFormatContext* avFormatContext, int videoStreamIndex,
         int av_ret_val = avcodec_decode_video2(avCodecContext, outAvFrame, &frame_finished, &av_packet);
         if (av_ret_val < 0)
         {
-            cerr << "Cannot decode video frame: " << AVUtils::avErrorToString(av_ret_val).toStdString() << endl;
+            qWarning().nospace() << "AVU > WARNING: Cannot decode video frame: " << AVUtils::avErrorToQString(av_ret_val);
 
             continue;
         }
+    }
+    if (av_packet.pos < 0)
+    {
+        qWarning().nospace() << "AVU > WARNING: Invalid frame";
+
+        ret_val = -2;
     }
 
     // Cleanup.
     av_free_packet(&av_packet);
 
-    return 0;
+    return ret_val;
 }
 
 int AVUtils::convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecContext* avCodecContext, const AVFrame* avFrame, const AVFrame* avFrameRgb, cv::Mat& outCvImage)
@@ -58,7 +65,7 @@ int AVUtils::convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecC
             || !avFrame
             || !avFrameRgb)
     {
-        cerr << "convertAvFrameToCvMat: Invalid argument(s)" << endl;
+        qCritical().nospace() << "AVU > ERROR: convertAvFrameToCvMat: Invalid argument(s)";
 
         return -1;
     }
@@ -81,10 +88,20 @@ int AVUtils::convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecC
     return 0;
 }
 
-QString AVUtils::avErrorToString(int errnum)
+const char* AVUtils::avErrorToString(int errnum)
 {
     char buffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
     size_t buffer_size = AV_ERROR_MAX_STRING_SIZE;
     const char *av_error = av_make_error_string(buffer, buffer_size, errnum);
-    return QString(av_error);
+    return av_error;
+}
+
+string AVUtils::avErrorToStdString(int errnum)
+{
+    return string(avErrorToString(errnum));
+}
+
+QString AVUtils::avErrorToQString(int errnum)
+{
+    return QString(avErrorToString(errnum));
 }
