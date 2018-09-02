@@ -72,7 +72,6 @@ class AVUtils
 public:
     static int decodeFrame(AVFormatContext* avFormatContext, int videoStreamIndex, AVCodecContext* avCodecContext, AVFrame* outAvFrame);
     static int convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecContext* avCodecContext, const AVFrame* avFrame, const AVFrame* avFrameRgb, cv::Mat& outCvImage);
-    static const char* avErrorToString(int errnum);
     static std::string avErrorToStdString(int errnum);
     static QString avErrorToQString(int errnum);
 };

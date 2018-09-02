@@ -88,20 +88,18 @@ int AVUtils::convertAvFrameToCvMat(struct SwsContext* swsContext, const AVCodecC
     return 0;
 }
 
-const char* AVUtils::avErrorToString(int errnum)
+string AVUtils::avErrorToStdString(int errnum)
 {
     char buffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
     size_t buffer_size = AV_ERROR_MAX_STRING_SIZE;
     const char *av_error = av_make_error_string(buffer, buffer_size, errnum);
-    return av_error;
-}
-
-string AVUtils::avErrorToStdString(int errnum)
-{
-    return string(avErrorToString(errnum));
+    return string(av_error);
 }
 
 QString AVUtils::avErrorToQString(int errnum)
 {
-    return QString(avErrorToString(errnum));
+    char buffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+    size_t buffer_size = AV_ERROR_MAX_STRING_SIZE;
+    const char *av_error = av_make_error_string(buffer, buffer_size, errnum);
+    return QString(av_error);
 }
