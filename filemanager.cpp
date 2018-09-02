@@ -94,7 +94,7 @@ void FileManager::onSourcePathChanged(const QString &sourcePath)
 
 void FileManager::onVideoFiles(QStringList *videoFiles)
 {
-    if (videoFiles == NULL)
+    if (videoFiles == nullptr)
     {
         return;
     }
@@ -104,7 +104,7 @@ void FileManager::onVideoFiles(QStringList *videoFiles)
 
 void FileManager::onOverwriteOutputFiles(bool *overwriteOutputFiles)
 {
-    if (overwriteOutputFiles == NULL)
+    if (overwriteOutputFiles == nullptr)
     {
         return;
     }

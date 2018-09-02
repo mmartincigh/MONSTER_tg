@@ -25,7 +25,7 @@ private:
     QSettings m_settings;
 
 public:
-    explicit SettingsManager(QObject *parent = NULL);
+    explicit SettingsManager(QObject *parent = nullptr);
     ~SettingsManager();
 
 private:

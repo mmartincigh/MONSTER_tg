@@ -22,7 +22,7 @@ private:
     bool m_isDestinationPathUrlValid;
 
 public:
-    explicit DestinationManager(QObject *parent = NULL);
+    explicit DestinationManager(QObject *parent = nullptr);
     ~DestinationManager();
 
 public:

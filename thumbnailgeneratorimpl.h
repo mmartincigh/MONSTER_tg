@@ -41,7 +41,7 @@ private:
     QWaitCondition *m_waitCondition;
 
 public:
-    explicit ThumbnailGeneratorImpl(QMutex *mutex, QWaitCondition *waitCondition, QObject *parent = NULL);
+    explicit ThumbnailGeneratorImpl(QMutex *mutex, QWaitCondition *waitCondition, QObject *parent = nullptr);
     ~ThumbnailGeneratorImpl();
 
 public:

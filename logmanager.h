@@ -19,7 +19,7 @@ private:
     QString m_logTag;
 
 public:
-    explicit LogManager(const QString &logTag, QObject *parent = NULL);
+    explicit LogManager(const QString &logTag, QObject *parent = nullptr);
     ~LogManager();
 
 public:

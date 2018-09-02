@@ -124,7 +124,7 @@ void SourceManager::setIsSourcePathUrlValid(bool isSourcePathUrlValid)
 
 void SourceManager::onSourcePath(QString *sourcePath)
 {
-    if (sourcePath == NULL)
+    if (sourcePath == nullptr)
     {
         return;
     }
@@ -134,7 +134,7 @@ void SourceManager::onSourcePath(QString *sourcePath)
 
 void SourceManager::onIsSourcePathUrlValid(bool *isSourcePathUrlValid)
 {
-    if (isSourcePathUrlValid == NULL)
+    if (isSourcePathUrlValid == nullptr)
     {
         return;
     }

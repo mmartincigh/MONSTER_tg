@@ -119,7 +119,7 @@ void DestinationManager::setIsDestinationPathUrlValid(bool isDestinationPathUrlV
 
 void DestinationManager::onDestinationPath(QString *destinationPath)
 {
-    if (destinationPath == NULL)
+    if (destinationPath == nullptr)
     {
         return;
     }
@@ -129,7 +129,7 @@ void DestinationManager::onDestinationPath(QString *destinationPath)
 
 void DestinationManager::onIsDestinationPathUrlValid(bool *isDestinationPathUrlValid)
 {
-    if (isDestinationPathUrlValid == NULL)
+    if (isDestinationPathUrlValid == nullptr)
     {
         return;
     }

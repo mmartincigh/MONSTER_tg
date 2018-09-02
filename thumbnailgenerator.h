@@ -35,7 +35,7 @@ private:
     QSharedPointer<ThumbnailGeneratorImpl> m_thumbnailGeneratorImplSptr;
 
 public:
-    explicit ThumbnailGenerator(QObject *parent = NULL);
+    explicit ThumbnailGenerator(QObject *parent = nullptr);
     ~ThumbnailGenerator();
 
 public:

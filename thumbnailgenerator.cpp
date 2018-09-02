@@ -62,7 +62,7 @@ void ThumbnailGenerator::initialize()
 void ThumbnailGenerator::uninitialize()
 {
     // Disconnect all the thumbnail generator implementation's signals during shut down to avoid deadlocks.
-    QObject::disconnect(m_thumbnailGeneratorImplSptr.data(), NULL, NULL, NULL);
+    QObject::disconnect(m_thumbnailGeneratorImplSptr.data(), nullptr, nullptr, nullptr);
 
     this->debug("Uninitialized");
 }

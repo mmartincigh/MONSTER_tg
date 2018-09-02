@@ -27,7 +27,7 @@ private:
     ImageProvider *m_imageProvider;
 
 public:
-    explicit ApplicationManager(QObject *parent = NULL);
+    explicit ApplicationManager(QObject *parent = nullptr);
     ~ApplicationManager();
 
 public:

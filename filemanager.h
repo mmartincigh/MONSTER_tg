@@ -21,7 +21,7 @@ private:
     bool m_overwriteOutputFiles;
 
 public:
-    explicit FileManager(QObject *parent = NULL);
+    explicit FileManager(QObject *parent = nullptr);
     ~FileManager();
 
 public:

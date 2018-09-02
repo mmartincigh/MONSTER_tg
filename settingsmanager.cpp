@@ -60,7 +60,7 @@ int SettingsManager::thumbnailMaxHeight() const
 
 void SettingsManager::onSourcePathModel(QStringList *sourcePathModel)
 {
-    if (sourcePathModel == NULL)
+    if (sourcePathModel == nullptr)
     {
         return;
     }
@@ -86,7 +86,7 @@ void SettingsManager::onSourcePathModelChanged(const QStringList &sourcePathMode
 
 void SettingsManager::onDestinationPathModel(QStringList *destinationPathModel)
 {
-    if (destinationPathModel == NULL)
+    if (destinationPathModel == nullptr)
     {
         return;
     }
@@ -112,7 +112,7 @@ void SettingsManager::onDestinationPathModelChanged(const QStringList &destinati
 
 void SettingsManager::onThumbnailRows(int *thumbnailRows)
 {
-    if (thumbnailRows == NULL)
+    if (thumbnailRows == nullptr)
     {
         return;
     }
@@ -138,7 +138,7 @@ void SettingsManager::onThumbnailRowsChanged(int thumbnailRows)
 
 void SettingsManager::onThumbnailColumns(int *thumbnailColumns)
 {
-    if (thumbnailColumns == NULL)
+    if (thumbnailColumns == nullptr)
     {
         return;
     }
@@ -164,7 +164,7 @@ void SettingsManager::onThumbnailColumnsChanged(int thumbnailColumns)
 
 void SettingsManager::onThumbnailMaxWidth(int *thumbnailMaxWidth)
 {
-    if (thumbnailMaxWidth == NULL)
+    if (thumbnailMaxWidth == nullptr)
     {
         return;
     }
@@ -190,7 +190,7 @@ void SettingsManager::onThumbnailMaxWidthChanged(int thumbnailMaxWidth)
 
 void SettingsManager::onThumbnailMaxHeight(int *thumbnailMaxHeight)
 {
-    if (thumbnailMaxHeight == NULL)
+    if (thumbnailMaxHeight == nullptr)
     {
         return;
     }

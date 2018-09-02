@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
 #ifdef QT_DEBUG
-    setbuf(stdout, NULL);
+    setbuf(stdout, nullptr);
 #endif
 
     qInstallMessageHandler(LogManager::messageHandler);

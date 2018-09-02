@@ -22,7 +22,7 @@ private:
     bool m_isSourcePathUrlValid;
 
 public:
-    explicit SourceManager(QObject *parent = NULL);
+    explicit SourceManager(QObject *parent = nullptr);
     ~SourceManager();
 
 public:

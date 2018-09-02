@@ -14,7 +14,7 @@ private:
     Qt::WindowFlags m_windowFlags;
 
 public:
-    explicit WindowManager(QObject *parent = NULL);
+    explicit WindowManager(QObject *parent = nullptr);
     ~WindowManager();
 
 public:

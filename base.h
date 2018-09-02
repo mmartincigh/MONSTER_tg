@@ -6,7 +6,7 @@
 class Base : public LogManager
 {
 public:
-    explicit Base(const QString &logTag, QObject *parent = NULL);
+    explicit Base(const QString &logTag, QObject *parent = nullptr);
 };
 
 #endif // BASE_H
