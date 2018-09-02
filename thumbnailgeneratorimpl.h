@@ -5,6 +5,8 @@
 #include <QUrl>
 #include <QWaitCondition>
 
+#include <opencv2/highgui/highgui.hpp>
+
 #include "base.h"
 #include "enums.h"
 
@@ -20,7 +22,7 @@ private:
     int m_thumbnailColumns;
     int m_thumbnailMaxWidth;
     int m_thumbnailMaxHeight;
-    QImage m_noThumbnailImage;
+    cv::Mat m_noThumbnailImage;
     Enums::State m_state;
     QString m_stateDescription;
     bool m_pause;
@@ -70,7 +72,7 @@ private:
     void setThumbnailColumns(int thumbnailColumns);
     void setThumbnailMaxWidth(int thumbnailMaxWidth);
     void setThumbnailMaxHeight(int thumbnailMaxHeight);
-    void setNoThumbnailImage(const QImage &noThumbnailImage);
+    void setNoThumbnailImage(const cv::Mat &noThumbnailImage);
     void setState(Enums::State state);
     void setStateDescription(const QString &stateDescription);
     void setProgress(float progress);
@@ -109,7 +111,7 @@ signals:
     void thumbnailColumnsChanged(int thumbnailCoolumns);
     void thumbnailMaxWidthChanged(int thumbnailMaxWidth);
     void thumbnailMaxHeightChanged(int thumbnailMaxHeight);
-    void noThumbnailImageChanged(const QImage &noThumbnailImage);
+    void noThumbnailImageChanged(const cv::Mat &noThumbnailImage);
     void stateChanged(Enums::State state);
     void stateDescriptionChanged(const QString &stateDescription);
     void pauseChanged(bool pause);

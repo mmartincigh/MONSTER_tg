@@ -88,8 +88,16 @@ void ThumbnailGeneratorImpl::initialize()
     emit this->thumbnailMaxHeight(&thumbnail_max_height);
     this->setThumbnailMaxHeight(thumbnail_max_height);
 
-    QImage no_thumbnail_image(":/images/thumbnails/noThumbnail");
-    this->setNoThumbnailImage(no_thumbnail_image.convertToFormat(QImage::Format_RGB888));
+    QFile no_thumbnail_image_file(":/images/thumbnails/noThumbnail");
+    cv::Mat cv_no_thumbnail_image;
+    if (no_thumbnail_image_file.open(QIODevice::ReadOnly))
+    {
+        qint64 no_thumbnail_image_file_size = no_thumbnail_image_file.size();
+        std::vector<char> buffer(no_thumbnail_image_file_size);
+        no_thumbnail_image_file.read(buffer.data(), no_thumbnail_image_file_size);
+        cv_no_thumbnail_image = imdecode(buffer, cv::IMREAD_COLOR);
+    }
+    this->setNoThumbnailImage(cv_no_thumbnail_image);
 
     this->debug("Initialized");
 }
@@ -277,16 +285,13 @@ void ThumbnailGeneratorImpl::setThumbnailMaxHeight(int thumbnailMaxHeight)
     emit this->thumbnailMaxHeightChanged(m_thumbnailMaxHeight);
 }
 
-void ThumbnailGeneratorImpl::setNoThumbnailImage(const QImage &noThumbnailImage)
+void ThumbnailGeneratorImpl::setNoThumbnailImage(const cv::Mat &noThumbnailImage)
 {
-    if (m_noThumbnailImage == noThumbnailImage)
-    {
-        return;
-    }
+    // Not doing the comparison because it's too costly.
 
-    m_noThumbnailImage = noThumbnailImage;
+    noThumbnailImage.copyTo(m_noThumbnailImage);
 
-    this->debug("No thumbnail image changed: size " + QString::number(m_noThumbnailImage.width()) + "x" + QString::number(m_noThumbnailImage.height()) + " format " + QString::number(m_noThumbnailImage.format()));
+    this->debug("No thumbnail image changed: size " + QString::number(m_noThumbnailImage.cols) + "x" + QString::number(m_noThumbnailImage.rows) + " format " + QString::number(m_noThumbnailImage.type()));
 
     emit this->noThumbnailImageChanged(m_noThumbnailImage);
 }
@@ -685,9 +690,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         return;
     }
 
-    // Prepare the fallback thumbnail beforehand.
-    cv::Mat cv_no_thumbnail(m_noThumbnailImage.height(), m_noThumbnailImage.width(), CV_8UC3, const_cast<uchar *>(m_noThumbnailImage.bits()), m_noThumbnailImage.bytesPerLine());
-
     // Generate the thumbnails.
     float total_progress = video_files.size() * thumbnail_number;
     int current_progress = 0;
@@ -987,9 +989,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
         // Prepare the fallback thumbnail just in case.
         cv::Mat cv_fallback_thumbnail = cv::Mat::zeros(cv_input_thumbnail_size, CV_8UC3);
-        int cv_no_thumbnail_scaling_factor = cv_input_thumbnail_size.height / 2 / cv_no_thumbnail.rows;
+        int cv_no_thumbnail_scaling_factor = cv_input_thumbnail_size.height / 2 / m_noThumbnailImage.rows;
         cv::Mat cv_no_thumbnail_resized;
-        cv::resize(cv_no_thumbnail,
+        cv::resize(m_noThumbnailImage,
                    cv_no_thumbnail_resized,
                    cv::Size(),
                    cv_no_thumbnail_scaling_factor,
