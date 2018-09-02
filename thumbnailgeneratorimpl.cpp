@@ -989,9 +989,56 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             return;
         }
 
+        // Calculate the size of the output thumbnail.
+        cv::Size cv_output_thumbnail_size(m_thumbnailColumns * cv_input_thumbnail_size.width,
+                                          m_thumbnailRows * cv_input_thumbnail_size.height);
+        this->debug("Output thumbnail size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
+
+        // Resize the output thumbnail if necessary.
+        if (cv_output_thumbnail_size.width > m_thumbnailMaxWidth
+                || cv_output_thumbnail_size.height > m_thumbnailMaxHeight)
+        {
+            // Scale the output thumbnail.
+            float scaling_factor = qMin(static_cast<float>(m_thumbnailMaxWidth) / cv_output_thumbnail_size.width,
+                                        static_cast<float>(m_thumbnailMaxHeight) / cv_output_thumbnail_size.height);
+            this->debug("Scaling factor: " + QString::number(scaling_factor));
+            cv_output_thumbnail_size.width = qMin(m_thumbnailMaxWidth,
+                                                  qCeil(cv_output_thumbnail_size.width * scaling_factor));
+            cv_output_thumbnail_size.height = qMin(m_thumbnailMaxHeight,
+                                                   qCeil(cv_output_thumbnail_size.height * scaling_factor));
+
+            // Adjust the input thumbnail size accordingly.
+            cv_input_thumbnail_size.width = cv_output_thumbnail_size.width / m_thumbnailColumns;
+            cv_input_thumbnail_size.height = cv_output_thumbnail_size.height / m_thumbnailRows;
+        }
+        this->debug("Output thumbnail final size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
+        if (cv_output_thumbnail_size.width <= 0
+                || cv_output_thumbnail_size.height <= 0)
+        {
+            this->error("Invalid output thumbnail size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
+
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+        this->debug("Input thumbnail final size: " + QString::number(cv_input_thumbnail_size.width) + "x" + QString::number(cv_input_thumbnail_size.height));
+        if (cv_input_thumbnail_size.width <= 0
+                || cv_input_thumbnail_size.height <= 0)
+        {
+            this->error("Invalid input thumbnail size: " + QString::number(cv_input_thumbnail_size.width) + "x" + QString::number(cv_input_thumbnail_size.height));
+
+            this->setErrors(m_errors + 1);
+
+            continue;
+        }
+
+        // Initialize the output thumbnail.
+        cv::Mat cv_output_thumbnail = cv::Mat::zeros(cv_output_thumbnail_size, CV_8UC3);
+
         // Prepare the fallback thumbnail just in case.
         cv::Mat cv_fallback_thumbnail = cv::Mat::zeros(cv_input_thumbnail_size, CV_8UC3);
-        int cv_no_thumbnail_scaling_factor = cv_input_thumbnail_size.height / 2 / m_noThumbnailImage.rows;
+        float cv_no_thumbnail_scaling_factor = cv_input_thumbnail_size.height / 3.f / m_noThumbnailImage.rows;
+        this->debug("No thumbnail scaling factor: " + QString::number(cv_no_thumbnail_scaling_factor));
         cv::Mat cv_no_thumbnail_resized;
         cv::resize(m_noThumbnailImage,
                    cv_no_thumbnail_resized,
@@ -1003,13 +1050,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                                                                       (cv_input_thumbnail_size.height - cv_no_thumbnail_resized.rows) / 2,
                                                                       cv_no_thumbnail_resized.cols,
                                                                       cv_no_thumbnail_resized.rows)));
-
-        // Generate the thumbnails and compose the multi-screenshot thumbnail.
-        int output_thumbnail_width = m_thumbnailColumns * cv_input_thumbnail_size.width;
-        int output_thumbnail_height = m_thumbnailRows * cv_input_thumbnail_size.height;
-        cv::Size cv_output_thumbnail_size(output_thumbnail_width, output_thumbnail_height);
-        this->debug("Output thumbnail size: " + QString::number(cv_output_thumbnail_size.width) + "x" + QString::number(cv_output_thumbnail_size.height));
-        cv::Mat cv_output_thumbnail = cv::Mat::zeros(cv_output_thumbnail_size, CV_8UC3);
 
         // Compose the multi-screenshot thumbnail with the fallback thumbnail.
         for (int c = 0; c < m_thumbnailColumns; c++)
@@ -1135,36 +1175,11 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         this->setThumbnail(QImage());
         this->debug("Thumbnails generated");
 
-        // Resize the output thumbnail if necessary.
-        cv::Size cv_output_thumbnail_final_size(output_thumbnail_width, output_thumbnail_height);
-        if (output_thumbnail_width > m_thumbnailMaxWidth
-                || output_thumbnail_height > m_thumbnailMaxHeight)
-        {
-            float scale = qMin(static_cast<float>(m_thumbnailMaxWidth) / output_thumbnail_width, static_cast<float>(m_thumbnailMaxHeight) / output_thumbnail_height);
-            this->debug("Scale: " + QString::number(scale));
-            cv_output_thumbnail_final_size.width = qMin(m_thumbnailMaxWidth, qCeil(output_thumbnail_width * scale));
-            cv_output_thumbnail_final_size.height = qMin(m_thumbnailMaxHeight, qCeil(output_thumbnail_height * scale));
-        }
-        this->debug("Output thumbnail final size: " + QString::number(cv_output_thumbnail_final_size.width) + "x" + QString::number(cv_output_thumbnail_final_size.height));
-        if (cv_output_thumbnail_final_size.width <= 0
-                || cv_output_thumbnail_final_size.height <= 0)
-        {
-            this->error("Invalid output thumbnail size: " + QString::number(cv_output_thumbnail_final_size.width) + "x" + QString::number(cv_output_thumbnail_final_size.height));
-
-            this->setErrors(m_errors + 1);
-
-            continue;
-        }
-
-        // Resize the output thumbnail.
-        cv::Mat cv_output_thumbnail_final;
-        cv::resize(cv_output_thumbnail, cv_output_thumbnail_final, cv_output_thumbnail_final_size);
-
         // Convert the output thumbnail to QImage.
-        QImage output_thumbnail_image(cv_output_thumbnail_final.data,
-                                      cv_output_thumbnail_final.cols,
-                                      cv_output_thumbnail_final.rows,
-                                      static_cast<int>(cv_output_thumbnail_final.step),
+        QImage output_thumbnail_image(cv_output_thumbnail.data,
+                                      cv_output_thumbnail.cols,
+                                      cv_output_thumbnail.rows,
+                                      static_cast<int>(cv_output_thumbnail.step),
                                       QImage::Format_RGB888);
 
         // Write the filename on the output thumbnail.
