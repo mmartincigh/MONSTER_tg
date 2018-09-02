@@ -791,7 +791,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
         int video_stream_index = -1;
         for (unsigned int i = 0; i < av_format_context->nb_streams; i++)
         {
-            if (av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            if (av_format_context->streams[i]
+                    && av_format_context->streams[i]->codec
+                    && av_format_context->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             {
                 video_stream_index = i;
                 break;
