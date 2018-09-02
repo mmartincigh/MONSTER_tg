@@ -27,7 +27,6 @@ ThumbnailGenerator::ThumbnailGenerator(QObject *parent) :
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(processedChanged(int)), this, SIGNAL(processedChanged(int)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(currentInputFileChanged(QString)), this, SIGNAL(currentInputFileChanged(QString)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(thumbnailUrlChanged(QUrl)), this, SIGNAL(thumbnailUrlChanged(QUrl)), Qt::BlockingQueuedConnection);
-    QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(thumbnailChanged(QImage)), this, SIGNAL(thumbnailChanged(QImage)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(isSourcePathUrlValid(bool*)), this, SIGNAL(isSourcePathUrlValid(bool*)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(isDestinationPathUrlValid(bool*)), this, SIGNAL(isDestinationPathUrlValid(bool*)), Qt::BlockingQueuedConnection);
     QObject::connect(m_thumbnailGeneratorImplSptr.data(), SIGNAL(sourcePath(QString*)), this, SIGNAL(sourcePath(QString*)), Qt::BlockingQueuedConnection);
@@ -145,11 +144,6 @@ QString ThumbnailGenerator::currentInputFile() const
 QUrl ThumbnailGenerator::thumbnailUrl() const
 {
     return m_thumbnailGeneratorImplSptr.data()->thumbnailUrl();
-}
-
-QImage ThumbnailGenerator::thumbnail() const
-{
-    return m_thumbnailGeneratorImplSptr.data()->thumbnail();
 }
 
 void ThumbnailGenerator::onUpdateThumbnailRows(int thumbnailRows)

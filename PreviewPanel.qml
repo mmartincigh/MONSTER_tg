@@ -55,20 +55,18 @@ Item {
 
             anchors.centerIn: parent
 
-            source: "image://imageProvider/no_thumbnail"
+            //source: "image://imageProvider/no_thumbnail"
+            source: thumbnailGenerator.thumbnailUrl
             sourceSize.width: 400
             sourceSize.height: 400
-            fillMode: Image.PreserveAspectFit
             cache: false
-            opacity: 0
+            opacity: showPreviewCheckBox.checked ? 1 : 0
 
-            onSourceChanged: {
-                console.log("=== onSourceChanged: " + source)
-            }
+            Behavior on opacity { NumberAnimation { duration: 200 } }
 
-            Connections {
+            /*Connections {
                 target: thumbnailGenerator
-                /*onThumbnailUrlChanged: {
+                onThumbnailUrlChanged: {
                     if (!showPreviewCheckBox.checked) {
                         previewImage.source = "";
                         return;
@@ -81,20 +79,16 @@ Item {
                         imageFadeOutAnimation.complete();
                         imageFadeInAnimation.start();
                     }
-                }*/
-                /*onThumbnailChanged: {
-                    console.log("=== onThumbnailChanged")
-                    previewImage.source = "";
-                }*/
-            }
+                }
+            }*/
         }
     }
 
-    SequentialAnimation {
+    /*SequentialAnimation {
         id: imageFadeInAnimation
 
         ScriptAction {
-            script: { previewImage.source = thumbnailGenerator.thumbnailUrl }
+            //script: { previewImage.source = thumbnailGenerator.thumbnailUrl }
         }
         NumberAnimation {
             target: previewImage
@@ -114,7 +108,7 @@ Item {
             duration: 250
         }
         ScriptAction {
-            script: { previewImage.source = "" }
+            //script: { previewImage.source = "" }
         }
-    }
+    }*/
 }

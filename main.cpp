@@ -11,10 +11,6 @@
 
 int main(int argc, char *argv[])
 {
-#ifdef QT_DEBUG
-    setbuf(stdout, nullptr);
-#endif
-
     qInstallMessageHandler(LogManager::messageHandler);
     qRegisterMetaType<Enums::State>("Enums::State");
     qmlRegisterType<Enums>("MONSTER.ThumbnailGenerator_GUI", 1, 0, "Enums");

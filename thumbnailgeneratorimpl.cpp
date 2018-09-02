@@ -210,11 +210,6 @@ QUrl ThumbnailGeneratorImpl::thumbnailUrl() const
     return m_thumbnailUrl;
 }
 
-QImage ThumbnailGeneratorImpl::thumbnail() const
-{
-    return m_thumbnail;
-}
-
 void ThumbnailGeneratorImpl::setIsEnabled(bool isEnabled)
 {
     if (m_isEnabled == isEnabled)
@@ -448,20 +443,6 @@ void ThumbnailGeneratorImpl::setThumbnailUrl(const QUrl &thumbnailUrl)
     this->debug("Thumbnail URL changed: " + m_thumbnailUrl.toString());
 
     emit this->thumbnailUrlChanged(m_thumbnailUrl);
-}
-
-void ThumbnailGeneratorImpl::setThumbnail(const QImage &thumbnail)
-{
-    if (m_thumbnail == thumbnail)
-    {
-        return;
-    }
-
-    m_thumbnail = thumbnail;
-
-    this->debug("Thumbnail changed");
-
-    emit this->thumbnailChanged(m_thumbnail);
 }
 
 bool ThumbnailGeneratorImpl::checkIfEnabled()
@@ -701,7 +682,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
     this->setProcessed(0);
     this->setCurrentInputFile(m_CURRENT_INPUT_FILE_NONE);
     this->setThumbnailUrl(QUrl());
-    this->setThumbnail(QImage());
     this->setState(Enums::Working);
     for (int i = 0; i < video_files.size(); i++)
     {
@@ -1076,7 +1056,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             if (!this->processStateCheckpoint())
             {
                 this->setThumbnailUrl(QUrl());
-                this->setThumbnail(QImage());
 
                 return;
             }
@@ -1093,7 +1072,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
                 this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
-                this->setThumbnail(QImage());
 
                 continue;
             }
@@ -1105,7 +1083,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
                 this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
-                this->setThumbnail(QImage());
 
                 continue;
             }
@@ -1118,7 +1095,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
                 this->setProgress(++current_progress / total_progress);
                 this->setThumbnailUrl(QUrl());
-                this->setThumbnail(QImage());
 
                 continue;
             }
@@ -1131,14 +1107,12 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
                                            cv_current_thumbnail.cols,
                                            cv_current_thumbnail.rows,
                                            static_cast<int>(cv_current_thumbnail.step),
-                                           QImage::Format_RGB888);
-            this->setThumbnail(current_thumbnail_image);*/
+                                           QImage::Format_RGB888);*/
 
             // Check whether the process should be paused, resumed or stopped.
             if (!this->processStateCheckpoint())
             {
                 this->setThumbnailUrl(QUrl());
-                this->setThumbnail(QImage());
 
                 return;
             }
@@ -1161,7 +1135,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setErrors(m_errors + 1);
             this->setThumbnailUrl(QUrl());
-            this->setThumbnail(QImage());
 
             continue;
         }
@@ -1171,8 +1144,6 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
 
             this->setWarnings(m_warnings + 1);
         }
-        this->setThumbnailUrl(QUrl());
-        this->setThumbnail(QImage());
         this->debug("Thumbnails generated");
 
         // Convert the output thumbnail to QImage.
@@ -1210,6 +1181,9 @@ void ThumbnailGeneratorImpl::onGenerateThumbnails()
             this->setOverwritten(m_overwritten + 1);
         }
         this->setProcessed(m_processed + 1);
+
+        // Update the thumbnail preview box in the GUI.
+        this->setThumbnailUrl(QUrl("file:///" + output_file));
     }
     this->setProgress(1);
     this->setState(Enums::Completed);
