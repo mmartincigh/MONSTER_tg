@@ -6,14 +6,24 @@
 #include <QQmlContext>
 #include <QFile>
 
+#ifdef Q_OS_WIN
+#include <Windows.h>
+#endif
+
 #include "applicationmanager.h"
 #include "applicationutils.h"
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_WIN
+    ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
+#endif
+
     qInstallMessageHandler(LogManager::messageHandler);
     qRegisterMetaType<Enums::State>("Enums::State");
     qmlRegisterType<Enums>("MONSTER.ThumbnailGenerator_GUI", 1, 0, "Enums");
+
+    QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
     QApplication application(argc, argv);
     application.setOrganizationName(ApplicationUtils::COMPANY_NAME);
     application.setOrganizationDomain(ApplicationUtils::COMPANY_WEBSITE);

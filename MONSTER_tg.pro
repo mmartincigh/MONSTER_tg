@@ -2,7 +2,7 @@ TARGET = MONSTER_tg
 
 TEMPLATE = app
 
-VERSION = 4.0.0
+VERSION = 4.0.1
 
 QT += \
     qml \
@@ -45,6 +45,7 @@ unix {
 
 win32 {
     LIBS += \
+        -lUser32 \
         -L$$PWD/lib \
         -lavcodec \
         -lavformat \

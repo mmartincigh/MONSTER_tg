@@ -24,13 +24,12 @@ Item {
         anchors.verticalCenter: destinationPathComboBox.verticalCenter
 
         text: qsTr("destination path")
-        font.pointSize: 10
     }
 
     ComboBox {
         id: destinationPathComboBox
 
-        height: 50
+        height: 25
         anchors.top: parent.top
         anchors.topMargin: 20
         anchors.left: destinationPathLabel.right
@@ -50,7 +49,6 @@ Item {
             anchors.centerIn: parent
 
             text: qsTr("enter or select destination path")
-            font.pointSize: 10
             color: "grey"
             opacity: parent.activeFocus || parent.editText.length > 0 ? 0 : 1
 

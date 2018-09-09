@@ -15,7 +15,6 @@ Item {
         anchors.bottomMargin: 20
 
         text: qsTr("preview")
-        font.pointSize: 10
     }
 
     Text {
@@ -27,7 +26,6 @@ Item {
         anchors.bottomMargin: 20
 
         text: qsTr("show")
-        font.pointSize: 10
     }
 
     CheckBox {
@@ -42,8 +40,8 @@ Item {
     Rectangle {
         id: previewFrame
 
-        width: 402
-        height: 402
+        width: 202
+        height: 202
 
         anchors.centerIn: parent
 
@@ -57,8 +55,8 @@ Item {
 
             //source: "image://imageProvider/no_thumbnail"
             source: thumbnailGenerator.thumbnailUrl
-            sourceSize.width: 400
-            sourceSize.height: 400
+            sourceSize.width: 200
+            sourceSize.height: 200
             cache: false
             opacity: showPreviewCheckBox.checked ? 1 : 0
 
